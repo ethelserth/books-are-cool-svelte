@@ -1,16 +1,22 @@
 import type { PageServerLoad } from './$types';
 import { getAllTags, getAllArticles } from '$lib/notion/client';
+import { error } from '@sveltejs/kit';
 
 const TAGS_PER_PAGE = 24;
 
 export const prerender = true;
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ params }) => {
   try {
     console.log('Loading tags page data...');
     
-    // Always load page 1 for the main tags page
-    const page = 1;
+    // Get page number from route params
+    const page = Math.max(1, parseInt(params.page));
+    
+    // Validate that it's actually a number
+    if (isNaN(page)) {
+      throw error(404, 'Page not found');
+    }
     
     const [tagNames, articles] = await Promise.all([
       getAllTags(),
@@ -33,6 +39,12 @@ export const load: PageServerLoad = async () => {
     // Calculate pagination
     const totalTags = allTagCounts.length;
     const totalPages = Math.ceil(totalTags / TAGS_PER_PAGE);
+    
+    // Check if page exists
+    if (page > totalPages && totalPages > 0) {
+      throw error(404, 'Page not found');
+    }
+    
     const startIndex = (page - 1) * TAGS_PER_PAGE;
     const endIndex = startIndex + TAGS_PER_PAGE;
     
@@ -52,18 +64,8 @@ export const load: PageServerLoad = async () => {
         hasPreviousPage: page > 1
       }
     };
-  } catch (error) {
-    console.error('Error loading tags page:', error);
-    return {
-      tags: [],
-      pagination: {
-        currentPage: 1,
-        totalPages: 0,
-        totalTags: 0,
-        tagsPerPage: TAGS_PER_PAGE,
-        hasNextPage: false,
-        hasPreviousPage: false
-      }
-    };
+  } catch (err) {
+    console.error('Error loading tags page:', err);
+    throw error(500, 'Failed to load tags');
   }
 };

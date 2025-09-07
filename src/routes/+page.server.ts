@@ -1,6 +1,9 @@
 import type { PageServerLoad } from './$types';
 import { getRecentArticles, getFeaturedArticles } from '$lib/notion/client';
 
+export const prerender = true;
+
+
 export const load: PageServerLoad = async () => {
   try {
     console.log('Loading homepage data...');

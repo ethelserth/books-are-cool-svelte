@@ -2,6 +2,8 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { getArticlesByAuthor, getAuthorBySlug } from '$lib/notion/client';
 
+export const prerender = true;
+
 export const load: PageServerLoad = async ({ params }) => {
   const authorSlug = params.slug;
   
