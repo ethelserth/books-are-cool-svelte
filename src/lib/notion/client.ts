@@ -1,74 +1,295 @@
 import { Client } from '@notionhq/client';
 import { NOTION_API_KEY, NOTION_DATABASE_ID } from '$env/static/private';
 import type { Article } from '$lib/types';
-import type { TagPage } from '$lib/types';
 
 // Initialize Notion client
 const notion = new Client({
   auth: NOTION_API_KEY,
 });
 
+// GLOBAL BUILD-TIME CACHE - Single source of truth
+let GLOBAL_BUILD_CACHE: {
+  allArticles?: Article[];
+  allTags?: string[];
+  articlesWithContent?: Map<string, Article>;
+  initialized?: boolean;
+} = {
+  articlesWithContent: new Map()
+};
+
 // Cache for relations to prevent duplicate API calls
 const relationsCache = new Map<string, { name: string; slug?: string }>();
 const authorsCache = new Map<string, any>();
-const articlesCache = new Map<string, Article>();
-const listingsCache = new Map<string, Article[]>();
-const tagsCache = new Map<string, string[]>();
 
-// Extract cover image from Notion page cover
-function extractCoverImage(cover: any): string | null {
-  if (!cover) return null;
-  
-  if (cover.type === 'file' && cover.file?.url) {
-    return cover.file.url;
+// OPTIMIZATION: Initialize all data once at build start with author pre-caching
+export async function initializeBuildCache(): Promise<void> {
+  if (GLOBAL_BUILD_CACHE.initialized) {
+    console.log('Build cache already initialized, skipping...');
+    return;
   }
-  
-  if (cover.type === 'external' && cover.external?.url) {
-    return cover.external.url;
+
+  console.log('Initializing build cache...');
+  const startTime = Date.now();
+
+  try {
+    // Fetch ALL data once with parallel processing
+    const allArticles = await fetchAllArticlesFromNotion();
+    const allTags = extractAllTagsFromArticles(allArticles);
+
+    // Pre-cache all author details
+    console.log('Pre-caching author details...');
+    const authorIds = new Set<string>();
+
+    // Collect all unique author relation IDs
+    allArticles.forEach(article => {
+      if (article.authorRelationIds) {
+        article.authorRelationIds.forEach(id => authorIds.add(id));
+      }
+    });
+
+    // Fetch all author details in parallel
+    const authorPromises = Array.from(authorIds).map(async (authorId) => {
+      try {
+        const page = await notion.pages.retrieve({ page_id: authorId });
+        if (page && 'properties' in page) {
+          const properties = page.properties;
+          const authorSlug = extractRichText(properties['Slug']);
+          
+          if (authorSlug) {
+            const author = {
+              id: page.id,
+              name: extractTitle(properties['Name'] || properties['Title'] || properties['Author Name']),
+              slug: authorSlug,
+              description: extractRichText(properties['Description'] || properties['Bio']),
+              image: extractPageIcon(page.icon) || extractCoverImage(page.cover),
+              articleCount: 0
+            };
+            
+            authorsCache.set(authorSlug, author);
+            return author;
+          }
+        }
+      } catch (error) {
+        console.error(`Error pre-caching author ${authorId}:`, error);
+      }
+      return null;
+    });
+
+    await Promise.all(authorPromises);
+    console.log(`Pre-cached ${authorsCache.size} authors`);
+
+    GLOBAL_BUILD_CACHE = {
+      allArticles,
+      allTags,
+      articlesWithContent: new Map(),
+      initialized: true
+    };
+
+    const duration = Date.now() - startTime;
+    console.log(`Build cache initialized in ${duration}ms - ${allArticles.length} articles, ${allTags.length} tags, ${authorsCache.size} authors`);
+  } catch (error) {
+    console.error('Failed to initialize build cache:', error);
+    throw error;
   }
+}
+
+// OPTIMIZATION: Fetch all articles from Notion ONCE with parallel processing
+async function fetchAllArticlesFromNotion(): Promise<Article[]> {
+  const articles: Article[] = [];
+  let hasMore = true;
+  let startCursor: string | undefined = undefined;
+
+  while (hasMore) {
+    const response = await notion.databases.query({
+      database_id: NOTION_DATABASE_ID,
+      filter: {
+        property: 'Publish',
+        checkbox: {
+          equals: true
+        }
+      },
+      sorts: [
+        {
+          property: 'Date',
+          direction: 'descending'
+        }
+      ],
+      start_cursor: startCursor,
+      page_size: 100
+    });
+
+    // Process all pages in parallel for speed
+    const pagePromises = response.results.map(async (page) => {
+      try {
+        return await transformNotionPageToArticle(page, false, true);
+      } catch (error) {
+        console.error(`Error processing page ${page.id}:`, error);
+        return null;
+      }
+    });
+
+    const processedPages = await Promise.all(pagePromises);
+    articles.push(...processedPages.filter(Boolean) as Article[]);
+
+    hasMore = response.has_more;
+    startCursor = response.next_cursor || undefined;
+    
+    console.log(`Fetched ${response.results.length} articles, total so far: ${articles.length}`);
+  }
+
+  return articles;
+}
+
+// OPTIMIZATION: Extract tags from articles instead of separate API calls
+function extractAllTagsFromArticles(articles: Article[]): string[] {
+  const tagSet = new Set<string>();
   
+  articles.forEach(article => {
+    if (article.tags && article.tags.length > 0) {
+      article.tags.forEach(tag => {
+        if (tag && tag.trim()) {
+          tagSet.add(tag.trim());
+        }
+      });
+    }
+  });
+  
+  return Array.from(tagSet).sort();
+}
+
+// OPTIMIZED: Get all articles from cache
+export async function getAllArticles(fetchRelations: boolean = true): Promise<Article[]> {
+  await initializeBuildCache();
+  
+  if (!GLOBAL_BUILD_CACHE.allArticles) {
+    throw new Error('Build cache not properly initialized');
+  }
+
+  console.log(`Returning ${GLOBAL_BUILD_CACHE.allArticles.length} cached articles`);
+  return GLOBAL_BUILD_CACHE.allArticles;
+}
+
+// OPTIMIZED: Get all tags from cache
+export async function getAllTags(): Promise<string[]> {
+  await initializeBuildCache();
+  
+  if (!GLOBAL_BUILD_CACHE.allTags) {
+    throw new Error('Build cache not properly initialized');
+  }
+
+  console.log(`Returning ${GLOBAL_BUILD_CACHE.allTags.length} cached tags`);
+  return GLOBAL_BUILD_CACHE.allTags;
+}
+
+// OPTIMIZED: Get recent articles from cache (no additional API call)
+export async function getRecentArticles(limit: number = 12): Promise<Article[]> {
+  const allArticles = await getAllArticles(true);
+  return allArticles.slice(0, limit);
+}
+
+// OPTIMIZED: Get articles by tag from cache (no additional API call)
+export async function getArticlesByTag(tagName: string): Promise<Article[]> {
+  const allArticles = await getAllArticles(true);
+  const searchTerm = tagName.replace(/-/g, ' ');
+  
+  const taggedArticles = allArticles.filter(article => 
+    article.tags?.some(tag => 
+      tag.toLowerCase() === searchTerm.toLowerCase() ||
+      tag.toLowerCase() === tagName.toLowerCase()
+    )
+  );
+  
+  console.log(`Found ${taggedArticles.length} articles for tag: ${tagName}`);
+  return taggedArticles;
+}
+
+// OPTIMIZED: Get articles by author from cache (no additional API call)
+export async function getArticlesByAuthor(authorSlug: string): Promise<Article[]> {
+  const allArticles = await getAllArticles(true);
+  const authorArticles = allArticles.filter(article => article.authorSlug === authorSlug);
+  console.log(`Found ${authorArticles.length} articles by author: ${authorSlug}`);
+  return authorArticles;
+}
+
+// OPTIMIZED: Get related articles from cache (no additional API call)
+export async function getRelatedArticles(currentArticle: Article, limit: number = 3): Promise<Article[]> {
+  const recentArticles = await getRecentArticles(20);
+  
+  return recentArticles
+    .filter(article => 
+      article.id !== currentArticle.id &&
+      article.slug !== currentArticle.slug
+    )
+    .slice(0, limit);
+}
+
+// OPTIMIZED: Get single article with smart content caching
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  await initializeBuildCache();
+  
+  // Check if we have article with content cached
+  if (GLOBAL_BUILD_CACHE.articlesWithContent?.has(slug)) {
+    console.log(`Returning cached article with content for slug: ${slug}`);
+    return GLOBAL_BUILD_CACHE.articlesWithContent.get(slug)!;
+  }
+
+  // Check if we have the article in the main cache (without content)
+  const allArticles = await getAllArticles(true);
+  const article = allArticles.find(a => a.slug === slug);
+  
+  if (!article) {
+    console.log(`No article found for slug: ${slug}`);
+    return null;
+  }
+
+  // Article exists, fetch content
+  console.log(`Fetching content for article: ${article.title}`);
+  try {
+    const content = await getPageContent(article.id);
+    const articleWithContent = {
+      ...article,
+      content,
+      readingTime: calculateReadingTime(content)
+    };
+    
+    // Cache article with content
+    GLOBAL_BUILD_CACHE.articlesWithContent?.set(slug, articleWithContent);
+    console.log(`Cached article with content: ${article.title}`);
+    
+    return articleWithContent;
+  } catch (error) {
+    console.error(`Error fetching content for ${slug}:`, error);
+    return article; // Return without content if fetch fails
+  }
+}
+
+// OPTIMIZED: Get author from pre-cached data (no API calls)
+export async function getAuthorBySlug(slug: string): Promise<any | null> {
+  await initializeBuildCache();
+  
+  if (authorsCache.has(slug)) {
+    console.log(`Returning cached author for slug: ${slug}`);
+    return authorsCache.get(slug);
+  }
+
+  console.log(`No cached author found for slug: ${slug}`);
   return null;
 }
 
-// Extract icon from Notion page icon
-function extractPageIcon(icon: any): string | null {
-  if (!icon) return null;
+// OPTIMIZED: Get featured articles from cache
+export async function getFeaturedArticles(limit: number = 3): Promise<Article[]> {
+  const allArticles = await getAllArticles(true);
+  const featuredArticles = allArticles.filter(article => article.featured).slice(0, limit);
   
-  if (icon.type === 'file' && icon.file?.url) {
-    return icon.file.url;
-  }
-  
-  if (icon.type === 'external' && icon.external?.url) {
-    return icon.external.url;
-  }
-  
-  if (icon.type === 'emoji') {
-    return null; // Can't use emoji as image URL
-  }
-  
-  return null;
+  // Override category for featured articles
+  return featuredArticles.map(article => ({
+    ...article,
+    category: 'Featured'
+  }));
 }
 
-// Convert 10-based rating to 5-based rating
-function convertRatingTo5Based(rating10: number): number {
-  // Convert 10-based (0-10) to 5-based (0-5)
-  return Math.round((rating10 / 10) * 5 * 2) / 2; // Allows for half stars
-}
-
-// Generate rating text based on 5-based rating
-function generateRatingText(rating5: number): string {
-  if (rating5 >= 4.5) return 'Outstanding';
-  if (rating5 >= 4.0) return 'Excellent';
-  if (rating5 >= 3.5) return 'Very Good';
-  if (rating5 >= 3.0) return 'Good';
-  if (rating5 >= 2.5) return 'Fair';
-  if (rating5 >= 2.0) return 'Poor';
-  return 'Terrible';
-}
-
-// Fast relation lookup - gets the name/title of a related page
+// Fast relation lookup with caching
 async function getRelationName(relationId: string): Promise<{ name: string; slug?: string }> {
-  // Check cache first
   if (relationsCache.has(relationId)) {
     return relationsCache.get(relationId)!;
   }
@@ -82,7 +303,6 @@ async function getRelationName(relationId: string): Promise<{ name: string; slug
     if (page && 'properties' in page) {
       const properties = page.properties;
       
-      // Common property names for titles
       const titleProps = ['Name', 'Title', 'Post Title', 'Tag Name', 'Author Name'];
       
       for (const propName of titleProps) {
@@ -95,17 +315,13 @@ async function getRelationName(relationId: string): Promise<{ name: string; slug
         }
       }
       
-      // Try to get slug if available
       if (properties['Slug']) {
         slug = extractRichText(properties['Slug']);
       }
     }
     
     const result = { name, slug };
-    
-    // Cache the result
     relationsCache.set(relationId, result);
-    
     return result;
   } catch (error) {
     console.error(`Error fetching relation ${relationId}:`, error);
@@ -115,30 +331,22 @@ async function getRelationName(relationId: string): Promise<{ name: string; slug
   }
 }
 
-// Enhanced transform function that fetches relation names
+// Enhanced transform function with parallel relation fetching
 export async function transformNotionPageToArticle(page: any, includeContent: boolean = true, fetchRelations: boolean = true): Promise<Article> {
   const properties = page.properties;
   const pageId = page.id;
 
-  // Get page content only if requested
   const content = includeContent ? await getPageContent(pageId) : '';
-  
-  // Extract cover image from page cover
   const coverImage = extractCoverImage(page.cover);
-
-  // Get relation IDs
   const authorRelations = properties['Author']?.relation || [];
   const tagRelations = properties['Tags']?.relation || [];
 
-  // Extract rating from Notion (10-based) and convert to 5-based
   const rating10 = extractNumber(properties['Rating']) || 0;
   const rating5 = rating10 > 0 ? convertRatingTo5Based(rating10) : 0;
   
-  // Get rating text from Notion or generate based on rating
   const customRatingText = extractRichText(properties['Rating Text']);
   const finalRatingText = customRatingText || (rating5 > 0 ? generateRatingText(rating5) : 'Not Rated');
 
-  // Base article object
   const article: Article = {
     id: pageId,
     title: extractTitle(properties['Post Title']),
@@ -160,430 +368,88 @@ export async function transformNotionPageToArticle(page: any, includeContent: bo
     tagRelationIds: tagRelations.map((r: any) => r.id)
   };
 
-  // Fetch relation names if requested and relations exist
   if (fetchRelations) {
-    // Get first author name
+    // Batch relation lookups for better performance
+    const relationPromises: Promise<any>[] = [];
+    
     if (authorRelations.length > 0) {
-      const authorInfo = await getRelationName(authorRelations[0].id);
-      article.author = authorInfo.name;
-      article.authorSlug = authorInfo.slug || `author-${authorRelations[0].id}`;
+      relationPromises.push(getRelationName(authorRelations[0].id));
     }
     
-    // Get first tag name  
     if (tagRelations.length > 0) {
-      const tagInfo = await getRelationName(tagRelations[0].id);
-      article.category = tagInfo.name;
-      article.tags = [tagInfo.name];
+      relationPromises.push(getRelationName(tagRelations[0].id));
+    }
+
+    const relations = await Promise.all(relationPromises);
+    
+    if (authorRelations.length > 0 && relations[0]) {
+      article.author = relations[0].name;
+      article.authorSlug = relations[0].slug || `author-${authorRelations[0].id}`;
+    }
+    
+    if (tagRelations.length > 0) {
+      const tagIndex = authorRelations.length > 0 ? 1 : 0;
+      if (relations[tagIndex]) {
+        article.category = relations[tagIndex].name;
+        article.tags = [relations[tagIndex].name];
+      }
     }
   }
 
   return article;
 }
 
-// Get all unique tags from articles
-export async function getAllTags(): Promise<string[]> {
-  const cacheKey = 'all-tags';
+// Helper functions remain the same...
+function extractCoverImage(cover: any): string | null {
+  if (!cover) return null;
   
-  // Check cache first
-  if (tagsCache.has(cacheKey)) {
-    console.log('Returning cached tags');
-    return tagsCache.get(cacheKey)!;
+  if (cover.type === 'file' && cover.file?.url) {
+    return cover.file.url;
   }
-
-  try {
-    console.log('Fetching all unique tags...');
-    
-    // Get all articles with relations to extract tags
-    const allArticles = await getAllArticles(true);
-    
-    // Extract all unique tags
-    const tagSet = new Set<string>();
-    
-    allArticles.forEach(article => {
-      if (article.tags && article.tags.length > 0) {
-        article.tags.forEach(tag => {
-          if (tag && tag.trim()) {
-            tagSet.add(tag.trim());
-          }
-        });
-      }
-    });
-    
-    const uniqueTags = Array.from(tagSet).sort();
-    console.log(`Found ${uniqueTags.length} unique tags`);
-    
-    // Cache the result
-    tagsCache.set(cacheKey, uniqueTags);
-    
-    return uniqueTags;
-  } catch (error) {
-    console.error('Error fetching tags:', error);
-    return [];
+  
+  if (cover.type === 'external' && cover.external?.url) {
+    return cover.external.url;
   }
+  
+  return null;
 }
 
-// Get author by slug - fetch from notion pages
-export async function getAuthorBySlug(slug: string): Promise<any | null> {
-  // Check cache first
-  if (authorsCache.has(slug)) {
-    console.log(`Returning cached author for slug: ${slug}`);
-    return authorsCache.get(slug);
+function extractPageIcon(icon: any): string | null {
+  if (!icon) return null;
+  
+  if (icon.type === 'file' && icon.file?.url) {
+    return icon.file.url;
   }
-
-  try {
-    console.log(`Searching for author with slug: ${slug}`);
-    
-    // Search through all relations to find author with matching slug
-    // This is a workaround since we don't have a separate authors database
-    const allArticles = await getAllArticles(false); // Don't fetch relations to avoid infinite loop
-    
-    // Get all unique author relation IDs
-    const authorIds = new Set<string>();
-    allArticles.forEach(article => {
-      if (article.authorRelationIds) {
-        article.authorRelationIds.forEach(id => authorIds.add(id));
-      }
-    });
-
-    // Search through author pages to find matching slug
-    for (const authorId of authorIds) {
-      try {
-        const page = await notion.pages.retrieve({ page_id: authorId });
-        
-        if (page && 'properties' in page) {
-          const properties = page.properties;
-          const authorSlug = extractRichText(properties['Slug']);
-          
-          if (authorSlug === slug) {
-            // Found matching author
-            const author = {
-              id: page.id,
-              name: extractTitle(properties['Name'] || properties['Title'] || properties['Author Name']),
-              slug: authorSlug,
-              description: extractRichText(properties['Description'] || properties['Bio']),
-              image: extractPageIcon(page.icon) || extractCoverImage(page.cover),
-              articleCount: 0 // Will be calculated separately
-            };
-            
-            // Cache the result
-            authorsCache.set(slug, author);
-            console.log(`Found and cached author: ${author.name}`);
-            
-            return author;
-          }
-        }
-      } catch (error) {
-        console.error(`Error checking author ${authorId}:`, error);
-        continue;
-      }
-    }
-    
-    console.log(`No author found for slug: ${slug}`);
-    return null;
-  } catch (error) {
-    console.error(`Error fetching author for slug ${slug}:`, error);
+  
+  if (icon.type === 'external' && icon.external?.url) {
+    return icon.external.url;
+  }
+  
+  if (icon.type === 'emoji') {
     return null;
   }
-}
-
-// Fetch articles by author slug
-export async function getArticlesByAuthor(authorSlug: string): Promise<Article[]> {
-  try {
-    console.log(`Fetching articles by author slug: ${authorSlug}`);
-    
-    // Get all articles with relations
-    const allArticles = await getAllArticles(true);
-    
-    // Filter by author slug
-    const authorArticles = allArticles.filter(article => 
-      article.authorSlug === authorSlug
-    );
-    
-    console.log(`Found ${authorArticles.length} articles by author: ${authorSlug}`);
-    return authorArticles;
-  } catch (error) {
-    console.error('Error fetching articles by author:', error);
-    return [];
-  }
-}
-
-// Fetch articles by tag name
-export async function getArticlesByTag(tagName: string): Promise<Article[]> {
-  try {
-    console.log(`Fetching articles by tag: ${tagName}`);
-    
-    const allArticles = await getAllArticles(true);
-    
-    // Convert slug back to potential tag name for searching
-    const searchTerm = tagName.replace(/-/g, ' ');
-    
-    const taggedArticles = allArticles.filter(article => 
-      article.tags?.some(tag => 
-        tag.toLowerCase() === searchTerm.toLowerCase() ||
-        tag.toLowerCase() === tagName.toLowerCase()
-      )
-    );
-    
-    console.log(`Found ${taggedArticles.length} articles for tag: ${tagName}`);
-    return taggedArticles;
-  } catch (error) {
-    console.error('Error fetching articles by tag:', error);
-    return [];
-  }
-}
-
-// Fetch recent articles with relations
-export async function getRecentArticles(limit: number = 12, fetchRelations: boolean = true): Promise<Article[]> {
-  const cacheKey = `recent-${limit}-${fetchRelations}`;
   
-  if (listingsCache.has(cacheKey)) {
-    console.log(`Returning cached recent articles (${limit})`);
-    return listingsCache.get(cacheKey)!;
-  }
-
-  try {
-    console.log(`Fetching ${limit} recent articles from Notion...`);
-    
-    const response = await notion.databases.query({
-      database_id: NOTION_DATABASE_ID,
-      filter: {
-        property: 'Publish',
-        checkbox: {
-          equals: true
-        }
-      },
-      sorts: [
-        {
-          property: 'Date',
-          direction: 'descending'
-        }
-      ],
-      page_size: limit
-    });
-
-    console.log(`Got ${response.results.length} articles from Notion`);
-
-    const articles: Article[] = [];
-    
-    for (const page of response.results) {
-      try {
-        const article = await transformNotionPageToArticle(page, false, fetchRelations);
-        articles.push(article);
-      } catch (error) {
-        console.error(`Error processing page ${page.id}:`, error);
-        continue;
-      }
-    }
-
-    console.log(`Processed ${articles.length} articles, caching result`);
-    
-    listingsCache.set(cacheKey, articles);
-    
-    return articles;
-  } catch (error) {
-    console.error('Error fetching recent articles from Notion:', error);
-    return [];
-  }
+  return null;
 }
 
-// Fetch all published articles
-export async function getAllArticles(fetchRelations: boolean = true): Promise<Article[]> {
-  const cacheKey = `all-${fetchRelations}`;
-  
-  if (listingsCache.has(cacheKey)) {
-    console.log('Returning cached all articles');
-    return listingsCache.get(cacheKey)!;
-  }
-
-  try {
-    const articles: Article[] = [];
-    let hasMore = true;
-    let startCursor: string | undefined = undefined;
-
-    // Paginate through all results
-    while (hasMore) {
-      const response = await notion.databases.query({
-        database_id: NOTION_DATABASE_ID,
-        filter: {
-          property: 'Publish',
-          checkbox: {
-            equals: true
-          }
-        },
-        sorts: [
-          {
-            property: 'Date',
-            direction: 'descending'
-          }
-        ],
-        start_cursor: startCursor,
-        page_size: 100
-      });
-
-      for (const page of response.results) {
-        try {
-          const article = await transformNotionPageToArticle(page, false, fetchRelations);
-          articles.push(article);
-        } catch (error) {
-          console.error(`Error processing page ${page.id}:`, error);
-          continue;
-        }
-      }
-
-      hasMore = response.has_more;
-      startCursor = response.next_cursor || undefined;
-      
-      console.log(`Fetched ${response.results.length} articles, total so far: ${articles.length}`);
-    }
-
-    console.log(`Finished fetching all articles: ${articles.length} total`);
-
-    listingsCache.set(cacheKey, articles);
-    
-    return articles;
-  } catch (error) {
-    console.error('Error fetching articles from Notion:', error);
-    return [];
-  }
+function convertRatingTo5Based(rating10: number): number {
+  return Math.round((rating10 / 10) * 5 * 2) / 2;
 }
 
-// Fetch featured articles with relations
-export async function getFeaturedArticles(limit: number = 3): Promise<Article[]> {
-  try {
-    const response = await notion.databases.query({
-      database_id: NOTION_DATABASE_ID,
-      filter: {
-        and: [
-          {
-            property: 'Publish',
-            checkbox: {
-              equals: true
-            }
-          },
-          {
-            property: 'Featured',
-            checkbox: {
-              equals: true
-            }
-          }
-        ]
-      },
-      sorts: [
-        {
-          property: 'Date',
-          direction: 'descending'
-        }
-      ],
-      page_size: limit
-    });
-
-    const articles: Article[] = [];
-    
-    for (const page of response.results) {
-      try {
-        const article = await transformNotionPageToArticle(page, false, true);
-        article.category = 'Featured'; // Override category for featured articles
-        articles.push(article);
-      } catch (error) {
-        console.error(`Error processing page ${page.id}:`, error);
-        continue;
-      }
-    }
-
-    return articles;
-  } catch (error) {
-    console.error('Error fetching featured articles:', error);
-    return [];
-  }
-}
-
-// Fetch single article by slug with full relations
-export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  if (articlesCache.has(slug)) {
-    console.log(`Returning cached article for slug: ${slug}`);
-    return articlesCache.get(slug)!;
-  }
-
-  try {
-    console.log(`Fetching article from Notion for slug: ${slug}`);
-    
-    const response = await notion.databases.query({
-      database_id: NOTION_DATABASE_ID,
-      filter: {
-        and: [
-          {
-            property: 'Publish',
-            checkbox: {
-              equals: true
-            }
-          },
-          {
-            property: 'Slug',
-            rich_text: {
-              equals: slug
-            }
-          }
-        ]
-      }
-    });
-
-    if (response.results.length === 0) {
-      console.log(`No article found for slug: ${slug}`);
-      return null;
-    }
-
-    const page = response.results[0];
-    console.log(`Found article, fetching full content and relations for: ${extractTitle(page.properties['Post Title'])}`);
-    
-    const article = await transformNotionPageToArticle(page, true, true);
-    
-    articlesCache.set(slug, article);
-    console.log(`Cached article: ${article.title}`);
-    
-    return article;
-  } catch (error) {
-    console.error(`Error fetching article for slug ${slug}:`, error);
-    return null;
-  }
-}
-
-// Get related articles efficiently
-export async function getRelatedArticles(currentArticle: Article, limit: number = 3): Promise<Article[]> {
-  const cacheKey = `related-${currentArticle.id}-${limit}`;
-  
-  if (listingsCache.has(cacheKey)) {
-    console.log(`Returning cached related articles for: ${currentArticle.title}`);
-    return listingsCache.get(cacheKey)!;
-  }
-
-  try {
-    console.log(`Finding related articles for: ${currentArticle.title}`);
-    
-    const recentArticles = await getRecentArticles(20, true);
-    
-    const related = recentArticles
-      .filter(article => 
-        article.id !== currentArticle.id &&
-        article.slug !== currentArticle.slug
-      )
-      .slice(0, limit);
-    
-    console.log(`Found ${related.length} related articles`);
-    
-    listingsCache.set(cacheKey, related);
-    
-    return related;
-  } catch (error) {
-    console.error('Error fetching related articles:', error);
-    return [];
-  }
+function generateRatingText(rating5: number): string {
+  if (rating5 >= 4.5) return 'Outstanding';
+  if (rating5 >= 4.0) return 'Excellent';
+  if (rating5 >= 3.5) return 'Very Good';
+  if (rating5 >= 3.0) return 'Good';
+  if (rating5 >= 2.5) return 'Fair';
+  if (rating5 >= 2.0) return 'Poor';
+  return 'Terrible';
 }
 
 export async function getAllAuthors(): Promise<any[]> {
   return [];
 }
 
-// Fetch page content (blocks) from Notion with nested block support
 export async function getPageContent(pageId: string): Promise<string> {
   try {
     const blocks = await getAllBlocksRecursively(pageId);
@@ -594,7 +460,6 @@ export async function getPageContent(pageId: string): Promise<string> {
   }
 }
 
-// Recursively fetch all blocks including nested ones
 async function getAllBlocksRecursively(blockId: string): Promise<any[]> {
   const blocks: any[] = [];
   
@@ -610,13 +475,10 @@ async function getAllBlocksRecursively(blockId: string): Promise<any[]> {
       });
 
       for (const block of response.results) {
-        // Add the block itself
         blocks.push(block);
         
-        // If block has children, fetch them recursively
         if (block.has_children) {
           const children = await getAllBlocksRecursively(block.id);
-          // Add children property to the block for nested content handling
           block.children = children;
         }
       }
@@ -631,12 +493,10 @@ async function getAllBlocksRecursively(blockId: string): Promise<any[]> {
   return blocks;
 }
 
-// Convert Notion blocks to HTML with nested content support
 function convertBlocksToHtml(blocks: any[]): string {
   return blocks.map(block => convertBlockToHtml(block)).join('\n');
 }
 
-// Convert individual block to HTML, handling nested content
 function convertBlockToHtml(block: any): string {
   switch (block.type) {
     case 'paragraph':
@@ -671,7 +531,6 @@ function convertBlockToHtml(block: any): string {
       
     case 'quote':
       let quoteContent = extractTextFromRichText(block.quote.rich_text);
-      // Handle nested content within blockquotes
       if (block.children && block.children.length > 0) {
         quoteContent += convertBlocksToHtml(block.children);
       }
@@ -685,7 +544,6 @@ function convertBlockToHtml(block: any): string {
       return `<img src="${imageUrl}" alt="Article image" class="w-full rounded-lg my-8" />`;
       
     default:
-      // Handle unknown block types that might have children
       if (block.children && block.children.length > 0) {
         return convertBlocksToHtml(block.children);
       }
@@ -693,7 +551,6 @@ function convertBlockToHtml(block: any): string {
   }
 }
 
-// Helper functions to extract data from Notion properties
 function extractTitle(property: any): string {
   return property?.title?.[0]?.plain_text || '';
 }

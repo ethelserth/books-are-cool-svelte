@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getArticlesByAuthor, getAuthorBySlug } from '$lib/notion/client';
+import { getAuthorBySlug, getAllArticles } from '$lib/notion/client';
 
 export const prerender = true;
 
@@ -10,10 +10,14 @@ export const load: PageServerLoad = async ({ params }) => {
   try {
     console.log(`Loading author page for slug: ${authorSlug}`);
     
-    const [articles, authorDetails] = await Promise.all([
-      getArticlesByAuthor(authorSlug),
-      getAuthorBySlug(authorSlug)
-    ]);
+    // Get all articles ONCE and filter by author slug in memory
+    const allArticles = await getAllArticles(true);
+    const articles = allArticles.filter(article => article.authorSlug === authorSlug);
+    
+    console.log(`Found ${articles.length} articles by author: ${authorSlug}`);
+    
+    // Get author details (this won't call getAllArticles again)
+    const authorDetails = await getAuthorBySlug(authorSlug);
     
     // If no author details and no articles, throw 404
     if (!authorDetails && articles.length === 0) {
