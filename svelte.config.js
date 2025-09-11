@@ -6,8 +6,7 @@ const config = {
   
   kit: {
     adapter: adapter({
-      // Enable edge functions for API routes
-      runtime: 'nodejs18.x'
+      // Don't set global runtime - let Vercel auto-detect
     }),
     prerender: {
       entries: [
