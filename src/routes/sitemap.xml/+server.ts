@@ -1,6 +1,8 @@
 import type { RequestHandler } from './$types';
 import { getAllArticles, getAllTags } from '$lib/notion/client';
 
+export const prerender = true;
+
 export const GET: RequestHandler = async () => {
   const baseUrl = 'https://booksarecool.gr';
   

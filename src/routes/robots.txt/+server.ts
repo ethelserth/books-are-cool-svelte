@@ -1,5 +1,7 @@
 import type { RequestHandler } from './$types';
 
+export const prerender = true;
+
 export const GET: RequestHandler = async () => {
   const robotsTxt = `User-agent: *
 Allow: /
