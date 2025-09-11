@@ -33,7 +33,7 @@
       onclick={handleClick}
       onkeydown={handleKeydown}
     >
-      <span class="text-text-light">Search reviews, authors, or titles...</span>
+      <span class="text-text-light">Αναζητήστε συγγραφείς ή τίτλους...</span>
     </button>
   </div>
 </section>

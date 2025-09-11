@@ -128,7 +128,7 @@
           bind:this={searchInput}
           bind:value={query}
           oninput={debounceSearch}
-          placeholder="Search articles, authors, tags..."
+          placeholder="Αναζητήστε συγγραφείς ή τίτλους..."
           class="flex-1 text-lg outline-none"
           type="text"
         />

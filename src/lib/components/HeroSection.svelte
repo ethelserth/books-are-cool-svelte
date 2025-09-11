@@ -23,6 +23,7 @@
   sidebarFeaturedArticles.forEach(article => {
     trendingItems.push({
       title: article.title,
+      author: article.author,
       date: article.date,
       slug: article.slug,
       isReal: true
@@ -42,7 +43,7 @@
   <!-- Main Story -->
   <article class="lg:col-span-2 bg-white border-2 border-text-black p-10 relative">
     <div class="absolute -top-3 left-8 bg-white px-4 text-xs font-bold tracking-wide text-accent-red">
-      FEATURED REVIEW
+      Ανακαλύψτε
     </div>
     
     {#if mainFeaturedArticle}
@@ -62,7 +63,7 @@
       </h2>
       
       <p class="text-sm text-text-light mb-6 uppercase tracking-wide">
-        By {mainFeaturedArticle.author} • {mainFeaturedArticle.category}
+        {mainFeaturedArticle.author} • {mainFeaturedArticle.category}
       </p>
       
       <div class="font-crimson text-xl leading-relaxed text-text-gray mb-8">
@@ -86,7 +87,7 @@
           href="/{mainFeaturedArticle.slug}"
           class="inline-flex items-center gap-2 text-accent-red font-semibold text-sm uppercase tracking-wide hover:translate-x-1 transition-transform duration-300"
         >
-          Continue Reading →
+          Διαβάστε περισσότερα →
         </a>
       </div>
     {:else}
@@ -117,7 +118,7 @@
     <!-- Trending/More Featured Section -->
     <div class="border border-border-light bg-light-gray p-6">
       <h3 class="font-playfair text-xl font-bold text-text-black mb-4 uppercase tracking-wide border-b-2 border-accent-red pb-2">
-        {sidebarFeaturedArticles.length > 0 ? 'More Featured' : 'Trending Now'}
+        {sidebarFeaturedArticles.length > 0 ? 'Κορυφαία Άρθρα' : 'Trending Now'}
       </h3>
       
       {#each trendingItems as item}
@@ -125,7 +126,7 @@
           <h4 class="font-semibold text-text-black mb-2 leading-tight">
             {#if item.isReal && item.slug}
               <a href="/{item.slug}" class="hover:text-accent-red transition-colors duration-300">
-                {item.title}
+                {item.title} - {item.author}
               </a>
             {:else}
               {item.title}
@@ -141,7 +142,7 @@
     <!-- Editor's Pick -->
     <div class="border border-border-light bg-light-gray p-6">
       <h3 class="font-playfair text-xl font-bold text-text-black mb-4 uppercase tracking-wide border-b-2 border-accent-red pb-2">
-        Editor's Pick
+        Επιλεγμένα άρθρα
       </h3>
       
       <div class="py-4">
