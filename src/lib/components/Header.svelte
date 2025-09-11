@@ -12,15 +12,18 @@
     { href: '#about', label: 'About' }
   ];
 
-  let isSearchOpen = $state(false);
-  let isMobileNavOpen = $state(false);
-
-  function openSearch() {
-    isSearchOpen = true;
+  // Create a proper interface for the props
+  interface HeaderProps {
+    onOpenSearch?: () => void;
   }
 
-  function closeSearch() {
-    isSearchOpen = false;
+  let { onOpenSearch }: HeaderProps = $props();
+  let isMobileNavOpen = $state(false);
+
+  function handleOpenSearch() {
+    if (onOpenSearch) {
+      onOpenSearch();
+    }
   }
 
   function handleMobileNavToggle(isOpen: boolean) {
@@ -29,7 +32,7 @@
 </script>
 
 <div class="bg-accent-red text-white py-2 relative overflow-hidden"></div>
-<header class="bg-white/95 backdrop-blur-sm border-b border-border-light py-6 sticky top-0 z-40 lg:h-auto"
+<header class="bg-white/95 backdrop-blur-sm border-b border-border-light py-6 sticky top-0 z-50 lg:h-auto"
         class:h-screen={isMobileNavOpen}>
   <div class="max-w-7xl mx-auto px-8 flex justify-between items-center">
     <a 
@@ -55,7 +58,7 @@
     <!-- Mobile Navigation -->
     <MobileNav 
       {navItems} 
-      onOpenSearch={openSearch}
+      onOpenSearch={handleOpenSearch}
       onToggle={handleMobileNavToggle}
     />
   </div>

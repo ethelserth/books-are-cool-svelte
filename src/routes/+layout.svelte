@@ -16,20 +16,20 @@
     isSearchOpen = false;
   }
 
-  </script>
+</script>
   
-  <svelte:head>
+<svelte:head>
 	<title>Books Are Cool - Modern Literary Reviews</title>
 	<meta name="description" content="Contemporary book reviews and literary criticism" />
-  </svelte:head>
+</svelte:head>
   
-  <!-- <CustomCursor /> -->
-  <!-- <BreakingNews /> -->
-  <Header />
+<!-- <CustomCursor /> -->
+<!-- <BreakingNews /> -->
+<Header onOpenSearch={openSearch} />
   
-  <main>
+<main>
 	<slot />
-  </main>
+</main>
   
-  <FloatingActions onOpenSearch={openSearch} />
-  <SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
+<FloatingActions onOpenSearch={openSearch} />
+<SearchModal isOpen={isSearchOpen} onClose={closeSearch} />

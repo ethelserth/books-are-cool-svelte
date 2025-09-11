@@ -22,9 +22,16 @@
     onToggle?.(false);
   }
   
-  function handleSearchClick() {
+  function handleSearchClick(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
     onOpenSearch();
-    // Don't close menu when search is clicked
+    // Keep menu open when search is clicked so user can see the modal
+  }
+  
+  function handleNavClick() {
+    // Close menu when navigation item is clicked
+    closeMenu();
   }
 </script>
 
@@ -71,6 +78,7 @@
       <div class="p-4 sm:p-6">
         <!-- Search Button (Mobile Only) -->
         <button
+          type="button"
           onclick={handleSearchClick}
           class="w-full flex items-center gap-3 p-4 mb-6 bg-light-gray border border-border-light hover:border-accent-red hover:bg-white transition-all duration-300 group"
         >
@@ -85,6 +93,7 @@
           {#each navItems as item}
             <a 
               href={item.href}
+              onclick={handleNavClick}
               class="block text-text-gray hover:text-accent-red hover:bg-light-gray font-medium text-lg py-3 px-4 transition-all duration-300 rounded border border-transparent hover:border-border-light"
             >
               {item.label}
