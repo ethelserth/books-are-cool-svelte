@@ -8,7 +8,7 @@
     { href: '/reviews', label: 'Reviews' },
     { href: '/tags/literary-fiction', label: 'Literary fiction' },
     { href: '/tags/crime', label: 'Crime' },
-    { href: '/tags/elliniki-logotechnia', label: 'Ελληνική Λογοτεχνία' },
+    { href: '/tags/greek-literature', label: 'Ελληνική Λογοτεχνία' },
     { href: '/tags/non-fiction', label: 'Non Fiction' }
   ];
 

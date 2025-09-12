@@ -3,6 +3,7 @@
   import SearchSection from '$lib/components/SearchSection.svelte';
   import SearchModal from '$lib/components/SearchModal.svelte';
   import ArticleCard from '$lib/components/ArticleCard.svelte';
+  import Meta from '$lib/components/Meta.svelte';
   import { intersectionObserver } from '$lib/actions/intersectionObserver';
   import type { Article } from '$lib/types';
 
@@ -26,22 +27,13 @@
   }
 </script>
 
-<svelte:head>
-  <title>Books Are Cool - Modern Literary Reviews & Book Criticism</title>
-  <meta name="description" content="Contemporary book reviews, literary criticism, and thoughtful analysis of the latest novels, classics, and emerging voices in literature." />
-  <meta name="keywords" content="book reviews, literary criticism, contemporary fiction, book recommendations, literature" />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="Books Are Cool - Modern Literary Reviews" />
-  <meta property="og:description" content="Contemporary book reviews and literary criticism" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://booksarecool.gr" />
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Books Are Cool - Modern Literary Reviews" />
-  <meta name="twitter:description" content="Contemporary book reviews and literary criticism" />
-</svelte:head>
+<Meta 
+  title="Books Are Cool - Modern Literary Reviews & Book Criticism"
+  description="Contemporary book reviews, literary criticism, and thoughtful analysis of the latest novels, classics, and emerging voices in literature."
+  url="/"
+  type="website"
+  keywords="book reviews, literary criticism, contemporary fiction, book recommendations, literature"
+/>
 
 <HeroSection featuredArticles={data.featuredArticles} />
 <SearchSection onOpenSearch={openSearch} />
@@ -50,7 +42,7 @@
 <section class="max-w-7xl mx-auto my-16 px-8">
   <div class="flex items-center mb-12">
     <h2 style="font-family: 'Playfair Display', serif" class="text-4xl font-black text-text-black uppercase tracking-tight">
-      Πρόσφατες κριτικές
+      Recent Reviews
     </h2>
     <div class="flex-1 h-1 gradient-news ml-8"></div>
   </div>

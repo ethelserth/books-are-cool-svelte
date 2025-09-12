@@ -21,6 +21,8 @@
 <svelte:head>
 	<title>Books Are Cool - Modern Literary Reviews</title>
 	<meta name="description" content="Contemporary book reviews and literary criticism" />
+  <link rel="icon" href="/favicon.ico" />
+
 </svelte:head>
   
 <!-- <CustomCursor /> -->

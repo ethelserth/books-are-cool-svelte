@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { Share2, Bookmark, Clock, Tag } from 'lucide-svelte';
   import StarRating from '$lib/components/StarRating.svelte';
+  import Meta from '$lib/components/Meta.svelte';
   
   interface Article {
     id: string;
@@ -57,24 +58,18 @@
   }
 </script>
 
-<svelte:head>
-  <title>{data.article.title} - Books Are Cool</title>
-  <meta name="description" content={data.article.excerpt} />
-  <meta name="keywords" content={data.article.tags?.join(', ')} />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content={data.article.title} />
-  <meta property="og:description" content={data.article.excerpt} />
-  <meta property="og:image" content={data.article.image} />
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content={$page.url.href} />
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content={data.article.title} />
-  <meta name="twitter:description" content={data.article.excerpt} />
-  <meta name="twitter:image" content={data.article.image} />
-</svelte:head>
+<Meta 
+  title={data.article.title}
+  description={data.article.excerpt}
+  url="/{data.article.slug}"
+  type="article"
+  image={data.article.image}
+  author={data.article.author}
+  publishedTime={data.article.publishedAt || data.article.date + 'T10:00:00Z'}
+  tags={data.article.tags}
+  rating={data.article.rating}
+  keywords={data.article.tags?.join(', ')}
+/>
 
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-4xl mx-auto px-8 pt-8" aria-label="Breadcrumb">
@@ -229,7 +224,6 @@
   
   :global(.article-content p) {
     margin-bottom: 1.5rem;
-    /* font-size: 18px; */
     line-height: 1.7;
   }
   
