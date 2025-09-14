@@ -28,11 +28,11 @@
 </script>
 
 <Meta 
-  title="Books Are Cool - Modern Literary Reviews & Book Criticism"
-  description="Contemporary book reviews, literary criticism, and thoughtful analysis of the latest novels, classics, and emerging voices in literature."
+  title="Books Are Cool - Σύγχρονες Λογοτεχνικές Κριτικές"
+  description="Σύγχρονες κριτικές βιβλίων, λογοτεχνική κριτική και στοχαστική ανάλυση των πιο πρόσφατων μυθιστορημάτων, κλασικών έργων και αναδυόμενων φωνών της λογοτεχνίας."
   url="/"
   type="website"
-  keywords="book reviews, literary criticism, contemporary fiction, book recommendations, literature"
+  keywords="κριτικές βιβλίων, λογοτεχνική κριτική, σύγχρονη πεζογραφία, προτάσεις βιβλίων, λογοτεχνία, ελληνικά βιβλία, βιβλιοκριτική"
 />
 
 <HeroSection featuredArticles={data.featuredArticles} />
@@ -42,7 +42,7 @@
 <section class="max-w-7xl mx-auto my-16 px-8">
   <div class="flex items-center mb-12">
     <h2 style="font-family: 'Playfair Display', serif" class="text-4xl font-black text-text-black uppercase tracking-tight">
-      Recent Reviews
+      Πρόσφατες Κριτικές
     </h2>
     <div class="flex-1 h-1 gradient-news ml-8"></div>
   </div>
