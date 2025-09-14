@@ -41,7 +41,7 @@
 
 <section class="max-w-7xl mx-auto my-12 px-8 grid lg:grid-cols-3 gap-12 border-b-2 border-text-black pb-12">
   <!-- Main Story -->
-  <article class="lg:col-span-2 bg-white border-2 border-text-black p-10 relative">
+  <article class="lg:col-span-2 bg-white border-2 border-text-black p-5 md:p-10 relative">
     <div class="absolute -top-3 left-8 bg-white px-4 text-xs font-bold tracking-wide text-accent-red">
       Ανακαλύψτε
     </div>
@@ -87,7 +87,7 @@
           href="/{mainFeaturedArticle.slug}"
           class="inline-flex items-center gap-2 text-accent-red font-semibold text-sm uppercase tracking-wide hover:translate-x-1 transition-transform duration-300"
         >
-          Διαβάστε περισσότερα →
+          Περισσότερα →
         </a>
       </div>
     {:else}

@@ -62,6 +62,15 @@
 
   // Calculate items per page based on item type
   const itemsPerPage = $derived(itemType === 'tags' ? 24 : 12);
+  
+  // Greek translation for item types
+  function getItemTypeInGreek(itemType: string): string {
+    switch(itemType) {
+      case 'reviews': return 'κριτικές';
+      case 'tags': return 'ετικέτες';
+      default: return itemType;
+    }
+  }
 </script>
 
 {#if totalPages > 1}
@@ -76,12 +85,12 @@
           aria-label="Previous page"
         >
           <ChevronLeft size={16} />
-          <span class="hidden sm:inline">Previous</span>
+          <span class="hidden sm:inline">Προηγούμενη</span>
         </a>
       {:else}
         <span class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-text-light border border-border-light opacity-50 cursor-not-allowed">
           <ChevronLeft size={16} />
-          <span class="hidden sm:inline">Previous</span>
+          <span class="hidden sm:inline">Προηγούμενη</span>
         </span>
       {/if}
       
@@ -121,12 +130,12 @@
           class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-text-gray border border-border-light hover:border-accent-red hover:text-accent-red transition-colors duration-300"
           aria-label="Next page"
         >
-          <span class="hidden sm:inline">Next</span>
+          <span class="hidden sm:inline">Επόμενη</span>
           <ChevronRight size={16} />
         </a>
       {:else}
         <span class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-text-light border border-border-light opacity-50 cursor-not-allowed">
-          <span class="hidden sm:inline">Next</span>
+          <span class="hidden sm:inline">Επόμενη</span>
           <ChevronRight size={16} />
         </span>
       {/if}
@@ -135,6 +144,6 @@
   
   <!-- Results Info -->
   <div class="text-center text-sm text-text-light mb-8">
-    Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalArticles)} of {totalArticles} {itemType}
+    Εμφάνιση {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalArticles)} από {totalArticles} {getItemTypeInGreek(itemType)}
   </div>
 {/if}

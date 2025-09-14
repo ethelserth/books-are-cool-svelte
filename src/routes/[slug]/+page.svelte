@@ -179,7 +179,7 @@
     <div class="mt-12 pt-8 border-t border-border-light">
       <div class="flex items-center gap-3 flex-wrap">
         <Tag size={18} class="text-text-light" />
-        <span class="font-semibold text-text-gray">Ετικέτες:</span>
+        <span class="font-semibold text-text-gray">Κατηγορίες:</span>
         {#each data.article.tags as tag}
           <a 
             href="/tags/{createTagSlug(tag)}"
@@ -192,6 +192,48 @@
     </div>
   {/if}
 </article>
+
+<!-- Related Articles Section -->
+{#if data.relatedArticles && data.relatedArticles.length > 0}
+  <section class="max-w-4xl mx-auto px-8 pb-16">
+    <div class="border-t border-border-light pt-12">
+      <div class="flex items-center mb-8">
+        <h2 style="font-family: 'Playfair Display', serif" class="text-3xl font-black text-text-black uppercase tracking-tight">
+          Σχετικά Άρθρα
+        </h2>
+        <div class="flex-1 h-1 gradient-news ml-8"></div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {#each data.relatedArticles.slice(0, 3) as relatedArticle}
+          <a href="/{relatedArticle.slug}" class="group block bg-white border border-border-light hover:border-accent-red p-4 transition-all duration-300 hover:shadow-md">
+            <div class="mb-4">
+              <img 
+                src={relatedArticle.image} 
+                alt={relatedArticle.title}
+                class="w-full h-32 object-cover rounded transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+              />
+            </div>
+            <span class="text-xs text-accent-red font-bold uppercase tracking-wide mb-2 block">
+              {relatedArticle.category}
+            </span>
+            <h3 class="font-semibold text-text-black group-hover:text-accent-red transition-colors duration-300 mb-2 line-clamp-2" style="font-family: 'Playfair Display', serif">
+              {relatedArticle.title}
+            </h3>
+            <p class="text-sm text-text-gray mb-3 line-clamp-2">
+              {relatedArticle.excerpt}
+            </p>
+            <div class="flex items-center justify-between text-xs text-text-light">
+              <span>Από {relatedArticle.author}</span>
+              <span>{new Date(relatedArticle.date).toLocaleDateString('el-GR', { month: 'short', day: 'numeric' })}</span>
+            </div>
+          </a>
+        {/each}
+      </div>
+    </div>
+  </section>
+{/if}
 
 <!-- Back to Top -->
 <div class="max-w-4xl mx-auto px-8 pb-8">
@@ -238,5 +280,12 @@
   
   :global(.article-content blockquote p) {
     margin-bottom: 0;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 </style>
