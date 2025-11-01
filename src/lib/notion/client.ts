@@ -1,6 +1,7 @@
 import { Client } from '@notionhq/client';
 import { NOTION_API_KEY, NOTION_DATABASE_ID } from '$env/static/private';
 import type { Article } from '$lib/types';
+import { ImageDownloader } from '$lib/services/imageDownloader';
 
 // Initialize Notion client
 const notion = new Client({
@@ -32,6 +33,12 @@ export async function initializeBuildCache(): Promise<void> {
   const startTime = Date.now();
 
   try {
+
+    await ImageDownloader.initialize();
+  
+    // Clean up old images (optional)
+    // ImageDownloader.cleanupOldImages(30);
+
     // Fetch ALL data once with parallel processing
     const allArticles = await fetchAllArticlesFromNotion();
     const allTags = extractAllTagsFromArticles(allArticles);
@@ -86,7 +93,8 @@ export async function initializeBuildCache(): Promise<void> {
     };
 
     const duration = Date.now() - startTime;
-    console.log(`Build cache initialized in ${duration}ms - ${allArticles.length} articles, ${allTags.length} tags, ${authorsCache.size} authors`);
+    const imageStats = ImageDownloader.getImageStats();
+    console.log(`Build cache initialized in ${duration}ms - ${allArticles.length} articles, ${allTags.length} tags, ${authorsCache.size} authors, ${imageStats.totalImages} images downloaded`);
   } catch (error) {
     console.error('Failed to initialize build cache:', error);
     throw error;
@@ -369,6 +377,10 @@ export async function transformNotionPageToArticle(page: any, includeContent: bo
 
   const content = includeContent ? await getPageContent(pageId) : '';
   const coverImage = extractCoverImage(page.cover);
+  let processedCoverImage = coverImage || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=400&fit=crop&crop=center';
+  if (coverImage ) {
+    processedCoverImage = await ImageDownloader.processNotionImageUrl(coverImage);
+  }
   const authorRelations = properties['Author']?.relation || [];
   const tagRelations = properties['Tags']?.relation || [];
 
@@ -384,7 +396,7 @@ export async function transformNotionPageToArticle(page: any, includeContent: bo
     author: 'Author',
     category: 'Article',
     excerpt: extractRichText(properties['Description']),
-    image: coverImage || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=400&fit=crop&crop=center',
+    image: processedCoverImage || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=600&h=400&fit=crop&crop=center',
     rating: rating5,
     ratingText: finalRatingText,
     date: extractDate(properties['Date']),
@@ -484,7 +496,13 @@ export async function getAllAuthors(): Promise<any[]> {
 export async function getPageContent(pageId: string): Promise<string> {
   try {
     const blocks = await getAllBlocksRecursively(pageId);
-    return convertBlocksToHtml(blocks);
+    const htmlContent = convertBlocksToHtml(blocks);
+    
+    // Process all Notion images in the content
+    const processedContent = await ImageDownloader.processAllImagesInContent(htmlContent);
+    
+    return processedContent;
+
   } catch (error) {
     console.error('Error fetching page content:', error);
     return '';

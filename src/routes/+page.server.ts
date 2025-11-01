@@ -8,7 +8,7 @@ export const load: PageServerLoad = async () => {
     console.log('Loading homepage data...');
     
     const [recentArticles, featuredArticles] = await Promise.all([
-      getRecentArticles(6), // Get 6 recent articles for homepage
+      getRecentArticles(12), // Get 6 recent articles for homepage
       getFeaturedArticles(4) // Get 4 featured articles (1 main + 3 sidebar)
     ]);
     
