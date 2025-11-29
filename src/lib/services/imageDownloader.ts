@@ -124,7 +124,7 @@ export class ImageDownloader {
     // if (!url.includes('notion.so') && !url.includes('amazonaws.com/secure.notion-static.com')) {
     //   return url;
     // }
-
+  // test
     const result = await this.downloadImage(url);
     return result ? result.localUrl : url;
   }
