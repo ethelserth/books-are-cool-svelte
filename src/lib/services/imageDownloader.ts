@@ -47,75 +47,72 @@ export class ImageDownloader {
   }
 
   static async downloadImage(imageUrl: string): Promise<ImageDownloadResult | null> {
-    try {
-      // Check if already downloaded
-      if (this.downloadedImages.has(imageUrl)) {
-        const localUrl = this.downloadedImages.get(imageUrl)!;
-        return {
-          originalUrl: imageUrl,
-          localUrl,
-          filename: path.basename(localUrl)
-        };
-      }
+  try {
+    // Check if already downloaded
+    if (this.downloadedImages.has(imageUrl)) {
+      const localUrl = this.downloadedImages.get(imageUrl)!;
+      return {
+        originalUrl: imageUrl,
+        localUrl,
+        filename: path.basename(localUrl)
+      };
+    }
 
-      console.log('Downloading image:', imageUrl);
+    console.log('Downloading image (first 100 chars):', imageUrl.substring(0, 100) + '...');
 
-      // Download the image
-      const response = await fetch(imageUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
+    // Download the image - DON'T add headers for AWS S3 signed URLs
+    const response = await fetch(imageUrl);
 
-      if (!response.ok) {
-        console.error(`Failed to download image: ${response.status} ${response.statusText}`);
-        return null;
-      }
+    if (!response.ok) {
+      console.error(`Failed to download image: ${response.status} ${response.statusText}`);
+      return null;
+    }
 
-      // Get content type for proper extension
-      const contentType = response.headers.get('content-type');
-      let extension = 'jpg';
-      
-      if (contentType?.includes('image/png')) extension = 'png';
-      else if (contentType?.includes('image/webp')) extension = 'webp';
-      else if (contentType?.includes('image/gif')) extension = 'gif';
-      else if (contentType?.includes('image/svg')) extension = 'svg';
+    // Get content type for proper extension
+    const contentType = response.headers.get('content-type');
+    let extension = 'jpg';
+    
+    if (contentType?.includes('image/png')) extension = 'png';
+    else if (contentType?.includes('image/webp')) extension = 'webp';
+    else if (contentType?.includes('image/gif')) extension = 'gif';
+    else if (contentType?.includes('image/svg')) extension = 'svg';
 
-      const filename = this.generateImageFilename(imageUrl, extension);
-      const filePath = path.join(this.staticDir, filename);
-      const localUrl = `${this.baseUrl}/${filename}`;
+    const filename = this.generateImageFilename(imageUrl, extension);
+    const filePath = path.join(this.staticDir, filename);
+    const localUrl = `${this.baseUrl}/${filename}`;
 
-      // Check if file already exists
-      if (fs.existsSync(filePath)) {
-        this.downloadedImages.set(imageUrl, localUrl);
-        console.log('Image already exists locally:', filename);
-        return {
-          originalUrl: imageUrl,
-          localUrl,
-          filename
-        };
-      }
-
-      // Save the image
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      
-      fs.writeFileSync(filePath, buffer);
-      
+    // Check if file already exists
+    if (fs.existsSync(filePath)) {
       this.downloadedImages.set(imageUrl, localUrl);
-      console.log('Downloaded and saved image:', filename);
-
+      console.log('Image already exists locally:', filename);
       return {
         originalUrl: imageUrl,
         localUrl,
         filename
       };
-
-    } catch (error) {
-      console.error('Error downloading image:', imageUrl, error);
-      return null;
     }
+
+    // Save the image
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    fs.writeFileSync(filePath, buffer);
+    
+    this.downloadedImages.set(imageUrl, localUrl);
+    console.log('✓ Downloaded and saved:', filename);
+
+    return {
+      originalUrl: imageUrl,
+      localUrl,
+      filename
+    };
+
+  } catch (error) {
+    console.error('Error downloading image:', error);
+    console.error('URL (first 200 chars):', imageUrl.substring(0, 200));
+    return null;
   }
+}
 
   static async processNotionImageUrl(url: string): Promise<string> {
     if (!url) return '';
