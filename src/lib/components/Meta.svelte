@@ -25,7 +25,7 @@
     rating = 0
   }: MetaProps = $props();
 
-  const fullTitle = type === 'article' ? `${title} - Books Are Cool` : title;
+  const fullTitle = type === 'article' ? `${title} - ${author} | Books Are Cool` : title;
   const canonicalUrl = url.startsWith('http') ? url : `https://www.booksarecool.gr${url}`;
 </script>
 
