@@ -1,3 +1,10 @@
-# allow crawling everything by default
 User-agent: *
-Disallow:
+Allow: /
+
+Sitemap: https://www.booksarecool.gr/sitemap.xml
+
+Disallow: /admin/
+Disallow: /_app/
+Disallow: /api/
+
+Crawl-delay: 1" > static/robots.txt
