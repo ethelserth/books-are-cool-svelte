@@ -5,9 +5,7 @@ const config = {
   preprocess: vitePreprocess(),
   
   kit: {
-    adapter: adapter({
-      // Don't set global runtime - let Vercel auto-detect
-    }),
+    adapter: adapter(),
     prerender: {
       entries: [
         '/',
