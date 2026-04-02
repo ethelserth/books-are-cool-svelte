@@ -1,6 +1,7 @@
+import type { RequestHandler } from './$types';
 import { getAllArticles, getAllTags } from '$lib/notion/client';
 
-export async function GET() {
+export const GET: RequestHandler = async () => {
   const baseUrl = 'https://booksarecool.gr';
   
   try {
@@ -73,11 +74,11 @@ export async function GET() {
     return new Response(sitemap, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'max-age=3600' // Cache for 1 hour
+        'Cache-Control': 'max-age=3600'
       }
     });
   } catch (error) {
     console.error('Error generating sitemap:', error);
     return new Response('Error generating sitemap', { status: 500 });
   }
-}
+};
