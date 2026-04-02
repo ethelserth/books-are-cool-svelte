@@ -139,14 +139,6 @@
         <Share2 size={16} />
         <span class="hidden sm:inline">Κοινοποίηση</span>
       </button>
-      <button
-        onclick={bookmarkArticle}
-        class="flex items-center gap-2 px-4 py-2 border border-border-light hover:border-accent-red hover:text-accent-red transition-colors duration-300"
-        type="button"
-      >
-        <Bookmark size={16} />
-        <span class="hidden sm:inline">Αποθήκευση</span>
-      </button>
     </div>
   </div>
   
