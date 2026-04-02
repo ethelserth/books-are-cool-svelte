@@ -45,12 +45,12 @@
   const hasPrevious = $derived(currentPage > 1);
   const hasNext = $derived(currentPage < totalPages);
   
-  // Generate URL for page navigation using route params instead of search params
+  // Generate URL for page navigation - FIXED: Use /tags/ instead of /tag/
   function getPageUrl(pageNum: number): string {
     if (pageNum === 1) {
-      return `/tag/${tagSlug}`;
+      return `/tags/${tagSlug}`;
     }
-    return `/tag/${tagSlug}/${pageNum}`;
+    return `/tags/${tagSlug}/${pageNum}`;
   }
 </script>
 

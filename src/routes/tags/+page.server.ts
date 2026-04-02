@@ -1,16 +1,11 @@
 import type { PageServerLoad } from './$types';
 import { getAllTags, getAllArticles } from '$lib/notion/client';
 
-const TAGS_PER_PAGE = 24;
-
 export const prerender = true;
 
 export const load: PageServerLoad = async () => {
   try {
     console.log('Loading tags page data...');
-    
-    // Always load page 1 for the main tags page
-    const page = 1;
     
     const [tagNames, articles] = await Promise.all([
       getAllTags(),
@@ -18,7 +13,7 @@ export const load: PageServerLoad = async () => {
     ]);
 
     // Count articles per tag
-    const allTagCounts = tagNames.map(tagName => {
+    const tags = tagNames.map(tagName => {
       const count = articles.filter(article =>
         article.tags?.includes(tagName)
       ).length;
@@ -30,40 +25,17 @@ export const load: PageServerLoad = async () => {
       };
     }).sort((a, b) => b.count - a.count); // Sort by count descending
 
-    // Calculate pagination
-    const totalTags = allTagCounts.length;
-    const totalPages = Math.ceil(totalTags / TAGS_PER_PAGE);
-    const startIndex = (page - 1) * TAGS_PER_PAGE;
-    const endIndex = startIndex + TAGS_PER_PAGE;
-    
-    // Get tags for current page
-    const tags = allTagCounts.slice(startIndex, endIndex);
-
-    console.log(`Loaded page ${page} of tags: ${tags.length} tags of ${totalTags} total`);
+    console.log(`Loaded ${tags.length} tags`);
 
     return {
       tags,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalTags,
-        tagsPerPage: TAGS_PER_PAGE,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      }
+      totalTags: tags.length
     };
   } catch (error) {
     console.error('Error loading tags page:', error);
     return {
       tags: [],
-      pagination: {
-        currentPage: 1,
-        totalPages: 0,
-        totalTags: 0,
-        tagsPerPage: TAGS_PER_PAGE,
-        hasNextPage: false,
-        hasPreviousPage: false
-      }
+      totalTags: 0
     };
   }
 };
