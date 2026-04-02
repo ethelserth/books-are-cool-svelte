@@ -31,7 +31,7 @@
   
   function formatDateLong(dateString: string): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('el-GR', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -74,9 +74,9 @@
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-4xl mx-auto px-8 pt-8" aria-label="Breadcrumb">
   <ol class="flex items-center gap-2 text-sm text-text-light">
-    <li><a href="/" class="hover:text-accent-red">Home</a></li>
+    <li><a href="/" class="hover:text-accent-red">Αρχική</a></li>
     <li class="before:content-['/'] before:mx-2">
-      <a href="/reviews" class="hover:text-accent-red">Reviews</a>
+      <a href="/reviews" class="hover:text-accent-red">Κριτικές</a>
     </li>
     <li class="before:content-['/'] before:mx-2 text-text-gray" aria-current="page">
       {data.article.title}
@@ -106,7 +106,7 @@
     </span>
     <span>{formatDateLong(data.article.date)}</span>
     <span>
-      By 
+      Από 
       {#if data.article.authorSlug}
         <a 
           href="/authors/{data.article.authorSlug}" 
@@ -137,7 +137,7 @@
         type="button"
       >
         <Share2 size={16} />
-        <span class="hidden sm:inline">Share</span>
+        <span class="hidden sm:inline">Κοινοποίηση</span>
       </button>
       <button
         onclick={bookmarkArticle}
@@ -145,7 +145,7 @@
         type="button"
       >
         <Bookmark size={16} />
-        <span class="hidden sm:inline">Save</span>
+        <span class="hidden sm:inline">Αποθήκευση</span>
       </button>
     </div>
   </div>
@@ -170,7 +170,7 @@
     
     <!-- Main Content -->
     <div class="article-content">
-      {@html data.article.content || '<p>No content available.</p>'}
+      {@html data.article.content || '<p>Δεν υπάρχει διαθέσιμο περιεχόμενο.</p>'}
     </div>
   </div>
   
@@ -179,7 +179,7 @@
     <div class="mt-12 pt-8 border-t border-border-light">
       <div class="flex items-center gap-3 flex-wrap">
         <Tag size={18} class="text-text-light" />
-        <span class="font-semibold text-text-gray">Tags:</span>
+        <span class="font-semibold text-text-gray">Ετικέτες:</span>
         {#each data.article.tags as tag}
           <a 
             href="/tags/{createTagSlug(tag)}"
@@ -199,7 +199,7 @@
     href="/"
     class="inline-flex items-center gap-2 text-accent-red font-semibold hover:underline"
   >
-    ← Back to Home
+    ← Επιστροφή στην Αρχική
   </a>
 </div>
 

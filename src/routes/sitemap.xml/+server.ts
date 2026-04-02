@@ -12,6 +12,14 @@ export const GET: RequestHandler = async () => {
       getAllTags()
     ]);
 
+    // Extract unique authors from articles
+    const authors = new Set<string>();
+    articles.forEach(article => {
+      if (article.authorSlug) {
+        authors.add(article.authorSlug);
+      }
+    });
+
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Homepage -->
@@ -45,6 +53,15 @@ export const GET: RequestHandler = async () => {
     <lastmod>${article.publishedAt || new Date(article.date).toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>`).join('')}
+  
+  <!-- Author Pages -->
+  ${Array.from(authors).map(authorSlug => `
+  <url>
+    <loc>${baseUrl}/authors/${authorSlug}</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>`).join('')}
   
   <!-- Tag Pages -->

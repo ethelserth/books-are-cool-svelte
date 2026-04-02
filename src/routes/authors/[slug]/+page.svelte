@@ -24,12 +24,12 @@
 </script>
 
 <svelte:head>
-  <title>Author: {data.author} - Books Are Cool</title>
+  <title>Συγγραφέας: {data.author} - Books Are Cool</title>
   <meta name="description" content="{data.authorDetails.description}" />
-  <meta name="keywords" content="{data.author}, book reviews, literary criticism, author" />
+  <meta name="keywords" content="{data.author}, κριτικές βιβλίων, λογοτεχνική κριτική, συγγραφέας" />
   
   <!-- Open Graph -->
-  <meta property="og:title" content="Author: {data.author} - Books Are Cool" />
+  <meta property="og:title" content="Συγγραφέας: {data.author} - Books Are Cool" />
   <meta property="og:description" content="{data.authorDetails.description}" />
   <meta property="og:type" content="profile" />
   {#if data.authorDetails.image}
@@ -38,7 +38,7 @@
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Author: {data.author} - Books Are Cool" />
+  <meta name="twitter:title" content="Συγγραφέας: {data.author} - Books Are Cool" />
   <meta name="twitter:description" content="{data.authorDetails.description}" />
   {#if data.authorDetails.image}
     <meta name="twitter:image" content="{data.authorDetails.image}" />
@@ -48,9 +48,9 @@
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-7xl mx-auto px-8 pt-8" aria-label="Breadcrumb">
   <ol class="flex items-center gap-2 text-sm text-text-light">
-    <li><a href="/" class="hover:text-accent-red">Home</a></li>
+    <li><a href="/" class="hover:text-accent-red">Αρχική</a></li>
     <li class="before:content-['/'] before:mx-2">
-      <a href="/reviews" class="hover:text-accent-red">Reviews</a>
+      <a href="/reviews" class="hover:text-accent-red">Κριτικές</a>
     </li>
     <li class="before:content-['/'] before:mx-2 text-text-gray" aria-current="page">
       {data.author}
@@ -89,7 +89,7 @@
       <div class="flex flex-wrap items-center gap-4 text-sm text-text-light">
         <span class="flex items-center gap-1">
           <strong class="text-text-gray">{data.articleCount}</strong>
-          {data.articleCount === 1 ? 'review' : 'reviews'}
+          {data.articleCount === 1 ? 'Βιβλίο' : 'βιβλία'}
         </span>
         {#if data.authorDetails.slug}
           <span>•</span>
@@ -106,7 +106,7 @@
     <!-- Section Header -->
     <div class="flex items-center mb-12">
       <h2 style="font-family: 'Playfair Display', serif" class="text-3xl font-black text-text-black uppercase tracking-tight">
-        Reviews by {data.author}
+        Βιβλία από {data.author}
       </h2>
       <div class="flex-1 h-1 gradient-news ml-8"></div>
     </div>
@@ -125,19 +125,19 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
         <div>
           <div class="text-2xl font-bold text-accent-red mb-2">{data.articleCount}</div>
-          <div class="text-text-gray text-sm uppercase tracking-wide">Total Reviews</div>
+          <div class="text-text-gray text-sm uppercase tracking-wide">Βιβλία</div>
         </div>
         <div>
           <div class="text-2xl font-bold text-accent-red mb-2">
             {Math.round(data.articles.reduce((sum, article) => sum + (article.rating || 0), 0) / data.articles.length * 10) / 10 || 0}
           </div>
-          <div class="text-text-gray text-sm uppercase tracking-wide">Average Rating</div>
+          <div class="text-text-gray text-sm uppercase tracking-wide">Μέση Βαθμολογία</div>
         </div>
         <div>
           <div class="text-2xl font-bold text-accent-red mb-2">
             {new Set(data.articles.map(article => article.category)).size}
           </div>
-          <div class="text-text-gray text-sm uppercase tracking-wide">Categories Covered</div>
+          <div class="text-text-gray text-sm uppercase tracking-wide">Κατηγορίες</div>
         </div>
       </div>
     </div>
@@ -148,16 +148,16 @@
       <div class="w-16 h-16 bg-light-gray rounded-full flex items-center justify-center mx-auto mb-6">
         <User size={24} class="text-text-light" />
       </div>
-      <h2 class="text-2xl font-bold text-text-black mb-4">No reviews found</h2>
+      <h2 class="text-2xl font-bold text-text-black mb-4">Δεν βρέθηκαν κριτικές</h2>
       <p class="text-text-gray mb-8 max-w-md mx-auto">
-        No published reviews by {data.author} are available at the moment. 
-        Check back later for new content.
+        Δεν υπάρχουν δημοσιευμένες κριτικές από {data.author} προς το παρόν. 
+        Επισκεφθείτε ξανά για νέο περιεχόμενο.
       </p>
       <a 
         href="/reviews"
         class="inline-flex items-center gap-2 bg-accent-red text-white px-6 py-3 font-semibold hover:bg-red-700 transition-colors duration-300"
       >
-        Browse All Reviews
+        Περιήγηση σε Όλες τις Κριτικές
       </a>
     </div>
   {/if}
@@ -169,6 +169,6 @@
     href="/reviews"
     class="inline-flex items-center gap-2 text-accent-red font-semibold hover:underline"
   >
-    ← Back to Reviews
+    ← Επιστροφή στις Κριτικές
   </a>
 </div>
