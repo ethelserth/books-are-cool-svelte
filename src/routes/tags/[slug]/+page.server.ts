@@ -4,14 +4,16 @@ import { getArticlesByTag } from '$lib/notion/client';
 
 const ARTICLES_PER_PAGE = 12;
 
-export const load: PageServerLoad = async ({ params, url }) => {
+export const prerender = true;
+
+export const load: PageServerLoad = async ({ params }) => {
   const tagSlug = params.slug;
   
   try {
     console.log(`Loading tag page for slug: ${tagSlug}`);
     
     // Get page number from URL search params
-    const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1'));
+    const page = 1;
     
     // Convert slug back to tag name for searching
     const tagName = tagSlug.replace(/-/g, ' ');

@@ -2,6 +2,8 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { getArticleBySlug, getRelatedArticles } from '$lib/notion/client';
 
+export const prerender = true;
+
 export const load: PageServerLoad = async ({ params }) => {
   try {
     const article = await getArticleBySlug(params.slug);
