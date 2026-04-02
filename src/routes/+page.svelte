@@ -50,7 +50,7 @@
 <section class="max-w-7xl mx-auto my-16 px-8">
   <div class="flex items-center mb-12">
     <h2 style="font-family: 'Playfair Display', serif" class="text-4xl font-black text-text-black uppercase tracking-tight">
-      Recent Reviews
+      Πρόσφατες κριτικές
     </h2>
     <div class="flex-1 h-1 gradient-news ml-8"></div>
   </div>

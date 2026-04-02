@@ -39,7 +39,7 @@
         {article.title}
       </h3>
       <p class="text-white/90 text-sm">
-        By {article.author}
+        {article.author}
       </p>
     </div>
   </div>

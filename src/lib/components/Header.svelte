@@ -6,10 +6,10 @@
   
   const navItems: NavItem[] = [
     { href: '/reviews', label: 'Reviews' },
-    { href: '#essays', label: 'Essays' },
-    { href: '#interviews', label: 'Interviews' },
-    { href: '#classics', label: 'Classics' },
-    { href: '#about', label: 'About' }
+    { href: '/tags/literary-fiction', label: 'Literary fiction' },
+    { href: '/tags/crime', label: 'Crime' },
+    { href: '/tags/elliniki-logotechnia', label: 'Ελληνική Λογοτεχνία' },
+    { href: '/tags/non-fiction', label: 'Non Fiction' }
   ];
 
   // Create a proper interface for the props
