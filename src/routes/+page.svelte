@@ -1,6 +1,7 @@
 <script lang="ts">
   import HeroSection from '$lib/components/HeroSection.svelte';
   import SearchSection from '$lib/components/SearchSection.svelte';
+  import SearchModal from '$lib/components/SearchModal.svelte';
   import ArticleCard from '$lib/components/ArticleCard.svelte';
   import { intersectionObserver } from '$lib/actions/intersectionObserver';
   import type { Article } from '$lib/types';
@@ -12,6 +13,17 @@
   }
 
   let { data }: { data: PageData } = $props();
+  
+  // Search modal state
+  let isSearchOpen = $state(false);
+  
+  function openSearch() {
+    isSearchOpen = true;
+  }
+  
+  function closeSearch() {
+    isSearchOpen = false;
+  }
 </script>
 
 <svelte:head>
@@ -31,10 +43,10 @@
   <meta name="twitter:description" content="Contemporary book reviews and literary criticism" />
 </svelte:head>
 
-<HeroSection />
-<SearchSection />
+<HeroSection featuredArticles={data.featuredArticles} />
+<SearchSection onOpenSearch={openSearch} />
 
-<!-- Main Content -->
+<!-- Recent Reviews Section -->
 <section class="max-w-7xl mx-auto my-16 px-8">
   <div class="flex items-center mb-12">
     <h2 style="font-family: 'Playfair Display', serif" class="text-4xl font-black text-text-black uppercase tracking-tight">
@@ -61,3 +73,18 @@
     </cite>
   </div>
 </section>
+
+<!-- Search Modal -->
+<SearchModal 
+  isOpen={isSearchOpen} 
+  onClose={closeSearch} 
+/>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
