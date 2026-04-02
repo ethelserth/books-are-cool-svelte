@@ -26,19 +26,19 @@
 </script>
 
 <svelte:head>
-  <title>Tag: {data.tag} {data.pagination.currentPage > 1 ? `- Page ${data.pagination.currentPage}` : ''} - Books Are Cool</title>
-  <meta name="description" content="Articles tagged with {data.tag}. Discover {data.articleCount} book reviews and literary analysis - page {data.pagination.currentPage} of {data.pagination.totalPages}." />
-  <meta name="keywords" content="{data.tag}, book reviews, literary criticism, page {data.pagination.currentPage}" />
+  <title>Κατηγορία: {data.tag} {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool</title>
+  <meta name="description" content="Άρθρα με κατηγορία {data.tag}. Ανακαλύψτε {data.articleCount} κριτικές βιβλίων και λογοτεχνική ανάλυση - σελίδα {data.pagination.currentPage} από {data.pagination.totalPages}." />
+  <meta name="keywords" content="{data.tag}, κριτικές βιβλίων, λογοτεχνική κριτική, σελίδα {data.pagination.currentPage}" />
   
   <!-- Open Graph -->
-  <meta property="og:title" content="Tag: {data.tag} {data.pagination.currentPage > 1 ? `- Page ${data.pagination.currentPage}` : ''} - Books Are Cool" />
-  <meta property="og:description" content="Articles tagged with {data.tag}" />
+  <meta property="og:title" content="Κατηγορία: {data.tag} {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool" />
+  <meta property="og:description" content="Άρθρα με κατηγορία {data.tag}" />
   <meta property="og:type" content="website" />
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Tag: {data.tag} {data.pagination.currentPage > 1 ? `- Page ${data.pagination.currentPage}` : ''} - Books Are Cool" />
-  <meta name="twitter:description" content="Articles tagged with {data.tag}" />
+  <meta name="twitter:title" content="Κατηγορία: {data.tag} {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool" />
+  <meta name="twitter:description" content="Άρθρα με κατηγορία {data.tag}" />
   
   <!-- Pagination SEO -->
   {#if data.pagination.hasPreviousPage}
@@ -55,9 +55,9 @@
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-7xl mx-auto px-8 pt-8" aria-label="Breadcrumb">
   <ol class="flex items-center gap-2 text-sm text-text-light">
-    <li><a href="/" class="hover:text-accent-red">Home</a></li>
+    <li><a href="/" class="hover:text-accent-red">Αρχική</a></li>
     <li class="before:content-['/'] before:mx-2">
-      <a href="/tags" class="hover:text-accent-red">Tags</a>
+      <a href="/tags" class="hover:text-accent-red">Κατηγορίες</a>
     </li>
     <li class="before:content-['/'] before:mx-2 text-text-gray" aria-current="page">
       {data.tag}
@@ -82,14 +82,14 @@
       </h1>
       
       <p class="text-text-gray text-lg mb-4 leading-relaxed">
-        {data.articleCount} {data.articleCount === 1 ? 'article' : 'articles'} tagged with "{data.tag}"
+        {data.articleCount} {data.articleCount === 1 ? 'άρθρο' : 'άρθρα'} με κατηγορία "{data.tag}"
       </p>
       
       <div class="flex flex-wrap items-center gap-4 text-sm text-text-light">
         <span class="bg-light-gray px-3 py-1 rounded-full">#{data.tagSlug}</span>
         {#if data.pagination.totalPages > 1}
           <span>•</span>
-          <span>Page {data.pagination.currentPage} of {data.pagination.totalPages}</span>
+          <span>Σελίδα {data.pagination.currentPage} από {data.pagination.totalPages}</span>
         {/if}
       </div>
     </div>
@@ -102,7 +102,7 @@
     <!-- Section Header -->
     <div class="flex items-center mb-12">
       <h2 style="font-family: 'Playfair Display', serif" class="text-3xl font-black text-text-black uppercase tracking-tight">
-        Articles in {data.tag}
+        Άρθρα στην κατηγορία {data.tag}
       </h2>
       <div class="flex-1 h-1 gradient-news ml-8"></div>
     </div>
@@ -130,19 +130,19 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
           <div>
             <div class="text-2xl font-bold text-accent-red mb-2">{data.articleCount}</div>
-            <div class="text-text-gray text-sm uppercase tracking-wide">Total Articles</div>
+            <div class="text-text-gray text-sm uppercase tracking-wide">Συνολικά Άρθρα</div>
           </div>
           <div>
             <div class="text-2xl font-bold text-accent-red mb-2">
               {Math.round(data.articles.reduce((sum, article) => sum + (article.rating || 0), 0) / data.articles.length * 10) / 10 || 0}
             </div>
-            <div class="text-text-gray text-sm uppercase tracking-wide">Average Rating</div>
+            <div class="text-text-gray text-sm uppercase tracking-wide">Μέση Βαθμολογία</div>
           </div>
           <div>
             <div class="text-2xl font-bold text-accent-red mb-2">
               {new Set(data.articles.map(article => article.author)).size}
             </div>
-            <div class="text-text-gray text-sm uppercase tracking-wide">Contributing Authors</div>
+            <div class="text-text-gray text-sm uppercase tracking-wide">Συνεργαζόμενοι Συγγραφείς</div>
           </div>
         </div>
       </div>
@@ -154,16 +154,16 @@
       <div class="w-16 h-16 bg-light-gray rounded-full flex items-center justify-center mx-auto mb-6">
         <Tag size={24} class="text-text-light" />
       </div>
-      <h2 class="text-2xl font-bold text-text-black mb-4">No articles found</h2>
+      <h2 class="text-2xl font-bold text-text-black mb-4">Δεν βρέθηκαν άρθρα</h2>
       <p class="text-text-gray mb-8 max-w-md mx-auto">
-        No published articles are tagged with "{data.tag}" at the moment. 
-        Check back later for new content.
+        Δεν υπάρχουν δημοσιευμένα άρθρα με κατηγορία "{data.tag}" προς το παρόν. 
+        Επισκεφθείτε ξανά για νέο περιεχόμενο.
       </p>
       <a 
         href="/tags"
         class="inline-flex items-center gap-2 bg-accent-red text-white px-6 py-3 font-semibold hover:bg-red-700 transition-colors duration-300"
       >
-        Browse All Tags
+        Περιήγηση σε Όλες τις Κατηγορίες
       </a>
     </div>
   {/if}
@@ -175,6 +175,6 @@
     href="/tags"
     class="inline-flex items-center gap-2 text-accent-red font-semibold hover:underline"
   >
-    ← All Tags
+    ← Όλες οι Κατηγορίες
   </a>
 </div>

@@ -213,14 +213,45 @@ export async function getArticlesByAuthor(authorSlug: string): Promise<Article[]
 
 // OPTIMIZED: Get related articles from cache (no additional API call)
 export async function getRelatedArticles(currentArticle: Article, limit: number = 3): Promise<Article[]> {
-  const recentArticles = await getRecentArticles(20);
+  const allArticles = await getAllArticles(true);
   
-  return recentArticles
+  // Filter out current article
+  const availableArticles = allArticles.filter(article => 
+    article.id !== currentArticle.id && article.slug !== currentArticle.slug
+  );
+  
+  // Priority 1: Same author articles
+  const sameAuthorArticles = availableArticles
+    .filter(article => article.authorSlug === currentArticle.authorSlug)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // Priority 2: Same tag/category articles
+  const sameTagArticles = availableArticles
     .filter(article => 
-      article.id !== currentArticle.id &&
-      article.slug !== currentArticle.slug
+      article.authorSlug !== currentArticle.authorSlug && // Exclude already selected same author articles
+      (article.category === currentArticle.category || 
+       article.tags?.some(tag => currentArticle.tags?.includes(tag)))
     )
-    .slice(0, limit);
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // Priority 3: Other recent articles
+  const otherArticles = availableArticles
+    .filter(article => 
+      article.authorSlug !== currentArticle.authorSlug &&
+      article.category !== currentArticle.category &&
+      !article.tags?.some(tag => currentArticle.tags?.includes(tag))
+    )
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // Combine articles in priority order
+  const relatedArticles = [
+    ...sameAuthorArticles,
+    ...sameTagArticles,
+    ...otherArticles
+  ].slice(0, limit);
+  
+  console.log(`Found ${relatedArticles.length} related articles for ${currentArticle.title}`);
+  return relatedArticles;
 }
 
 // OPTIMIZED: Get single article with smart content caching
@@ -361,7 +392,7 @@ export async function transformNotionPageToArticle(page: any, includeContent: bo
     slug: extractRichText(properties['Slug']),
     content: content,
     tags: [],
-    readingTime: includeContent ? calculateReadingTime(content) : '5 min read',
+    readingTime: includeContent ? calculateReadingTime(content) : '5 λεπτά',
     metaDescription: extractRichText(properties['Meta Description']),
     featured: extractCheckbox(properties['Featured']),
     authorRelationIds: authorRelations.map((r: any) => r.id),
@@ -600,5 +631,5 @@ function calculateReadingTime(content: string): string {
   const wordsPerMinute = 200;
   const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).length;
   const readingTime = Math.ceil(wordCount / wordsPerMinute);
-  return `${readingTime} min read`;
+  return `${readingTime} λεπτά`;
 }

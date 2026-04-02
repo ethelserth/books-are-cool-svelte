@@ -16,27 +16,27 @@
 </script>
 
 <svelte:head>
-  <title>All Tags - Books Are Cool</title>
-  <meta name="description" content="Browse all {data.totalTags} tags used in our book reviews and literary criticism." />
-  <meta name="keywords" content="tags, categories, book reviews, literary criticism, topics" />
+  <title>Όλες οι Κατηγορίες - Books Are Cool</title>
+  <meta name="description" content="Περιηγηθείτε σε όλες τις {data.totalTags} κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων και τη λογοτεχνική μας κριτική." />
+  <meta name="keywords" content="κατηγορίες, κατηγορίες, κριτικές βιβλίων, λογοτεχνική κριτική, θέματα" />
   
   <!-- Open Graph -->
-  <meta property="og:title" content="All Tags - Books Are Cool" />
-  <meta property="og:description" content="Browse all tags used in our book reviews" />
+  <meta property="og:title" content="Όλες οι Κατηγορίες - Books Are Cool" />
+  <meta property="og:description" content="Περιηγηθείτε σε όλες τις κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων μας" />
   <meta property="og:type" content="website" />
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="All Tags - Books Are Cool" />
-  <meta name="twitter:description" content="Browse all tags used in our book reviews" />
+  <meta name="twitter:title" content="Όλες οι Κατηγορίες - Books Are Cool" />
+  <meta name="twitter:description" content="Περιηγηθείτε σε όλες τις κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων μας" />
 </svelte:head>
 
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-7xl mx-auto px-8 pt-8" aria-label="Breadcrumb">
   <ol class="flex items-center gap-2 text-sm text-text-light">
-    <li><a href="/" class="hover:text-accent-red">Home</a></li>
+    <li><a href="/" class="hover:text-accent-red">Αρχική</a></li>
     <li class="before:content-['/'] before:mx-2 text-text-gray" aria-current="page">
-      Tags
+      Κατηγορίες
     </li>
   </ol>
 </nav>
@@ -45,17 +45,17 @@
 <header class="max-w-7xl mx-auto px-8 py-12">
   <div class="flex items-center mb-8">
     <h1 style="font-family: 'Playfair Display', serif" class="text-4xl lg:text-5xl font-black text-text-black uppercase tracking-tight">
-      All Tags
+      Όλες οι Κατηγορίες
     </h1>
     <div class="flex-1 h-1 gradient-news ml-8"></div>
   </div>
   
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <p class="text-text-gray text-lg">
-      Explore topics and genres in our book reviews
+      Εξερευνήστε θέματα και είδη στις κριτικές βιβλίων μας
     </p>
     <div class="flex items-center gap-4 text-sm text-text-light">
-      <span>{data.totalTags} total tags</span>
+      <span>{data.totalTags} συνολικές κατηγορίες</span>
     </div>
   </div>
 </header>
@@ -79,7 +79,7 @@
             {tag.name}
           </h3>
           <p class="text-sm text-text-light">
-            {tag.count} {tag.count === 1 ? 'article' : 'articles'}
+            {tag.count} {tag.count === 1 ? 'άρθρο' : 'άρθρα'}
           </p>
         </a>
       {/each}
@@ -90,19 +90,19 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
         <div>
           <div class="text-2xl font-bold text-accent-red mb-2">{data.totalTags}</div>
-          <div class="text-text-gray text-sm uppercase tracking-wide">Total Tags</div>
+          <div class="text-text-gray text-sm uppercase tracking-wide">Συνολικές Κατηγορίες</div>
         </div>
         <div>
           <div class="text-2xl font-bold text-accent-red mb-2">
             {data.tags.length > 0 ? data.tags[0].count : 0}
           </div>
-          <div class="text-text-gray text-sm uppercase tracking-wide">Most Popular</div>
+          <div class="text-text-gray text-sm uppercase tracking-wide">Πιο Δημοφιλής</div>
         </div>
         <div>
           <div class="text-2xl font-bold text-accent-red mb-2">
             {Math.round(data.tags.reduce((sum, tag) => sum + tag.count, 0) / data.tags.length) || 0}
           </div>
-          <div class="text-text-gray text-sm uppercase tracking-wide">Average per Tag</div>
+          <div class="text-text-gray text-sm uppercase tracking-wide">Μέσος Όρος ανά Κατηγορία</div>
         </div>
       </div>
     </div>
@@ -113,15 +113,15 @@
       <div class="w-16 h-16 bg-light-gray rounded-full flex items-center justify-center mx-auto mb-6">
         <Tag size={32} class="text-text-light" />
       </div>
-      <h2 class="text-2xl font-bold text-text-black mb-4">No tags found</h2>
+      <h2 class="text-2xl font-bold text-text-black mb-4">Δεν βρέθηκαν κατηγορίες</h2>
       <p class="text-text-gray mb-8 max-w-md mx-auto">
-        No tags are available at the moment. Tags will appear as articles are published.
+        Δεν υπάρχουν διαθέσιμες κατηγορίες αυτή τη στιγμή. Οι Κατηγορίες θα εμφανιστούν καθώς δημοσιεύονται άρθρα.
       </p>
       <a 
         href="/reviews"
         class="inline-flex items-center gap-2 bg-accent-red text-white px-6 py-3 font-semibold hover:bg-red-700 transition-colors duration-300"
       >
-        Browse All Reviews
+        Περιήγηση σε Όλες τις Κριτικές
       </a>
     </div>
   {/if}
@@ -133,6 +133,6 @@
     href="/"
     class="inline-flex items-center gap-2 text-accent-red font-semibold hover:underline"
   >
-    ← Back to Home
+    ← Επιστροφή στην Αρχική
   </a>
 </div>

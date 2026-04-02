@@ -9,7 +9,7 @@
   
   const actions = [
     { icon: Search, title: 'Search', action: 'search' },
-    { icon: Bookmark, title: 'Bookmark', action: 'bookmark' },
+    // { icon: Bookmark, title: 'Bookmark', action: 'bookmark' },
     { icon: Share, title: 'Share', action: 'share' }
   ];
   
