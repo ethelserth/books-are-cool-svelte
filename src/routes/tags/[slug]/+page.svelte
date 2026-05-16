@@ -3,8 +3,9 @@
   import TagPagination from '$lib/components/TagPagination.svelte';
   import { Tag } from 'lucide-svelte';
   import { intersectionObserver } from '$lib/actions/intersectionObserver';
+  import Meta from '$lib/components/Meta.svelte';
   import type { Article } from '$lib/types';
-  
+
   interface PaginationData {
     currentPage: number;
     totalPages: number;
@@ -13,7 +14,7 @@
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   }
-  
+
   interface PageData {
     tag: string;
     tagSlug: string;
@@ -21,35 +22,54 @@
     articleCount: number;
     pagination: PaginationData;
   }
-  
+
   let { data }: { data: PageData } = $props();
+
+  const pageSuffix = $derived(
+    data.pagination.currentPage > 1 ? ` - Σελίδα ${data.pagination.currentPage}` : ''
+  );
+  const canonical = $derived(
+    data.pagination.currentPage === 1
+      ? `/tags/${data.tagSlug}`
+      : `/tags/${data.tagSlug}/${data.pagination.currentPage}`
+  );
+  const itemList = $derived(
+    data.articles.map((article) => ({
+      name: article.title,
+      url: `/${article.slug}`,
+      image: article.image
+    }))
+  );
 </script>
 
+<Meta
+  title={`Κατηγορία: ${data.tag}${pageSuffix}`}
+  description={`Άρθρα με κατηγορία ${data.tag}. Ανακαλύψτε ${data.articleCount} κριτικές βιβλίων και λογοτεχνική ανάλυση - σελίδα ${data.pagination.currentPage} από ${data.pagination.totalPages}.`}
+  url={canonical}
+  type="collection"
+  keywords={`${data.tag}, κριτικές βιβλίων, λογοτεχνική κριτική${data.pagination.currentPage > 1 ? `, σελίδα ${data.pagination.currentPage}` : ''}`}
+  twitterCard="summary"
+  breadcrumbs={[
+    { name: 'Αρχική', url: '/' },
+    { name: 'Κατηγορίες', url: '/tags' },
+    { name: data.tag, url: `/tags/${data.tagSlug}` }
+  ]}
+  {itemList}
+  itemListName={`Κατηγορία: ${data.tag}`}
+/>
+
 <svelte:head>
-  <title>Κατηγορία: {data.tag} {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool</title>
-  <meta name="description" content="Άρθρα με κατηγορία {data.tag}. Ανακαλύψτε {data.articleCount} κριτικές βιβλίων και λογοτεχνική ανάλυση - σελίδα {data.pagination.currentPage} από {data.pagination.totalPages}." />
-  <meta name="keywords" content="{data.tag}, κριτικές βιβλίων, λογοτεχνική κριτική, σελίδα {data.pagination.currentPage}" />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="Κατηγορία: {data.tag} {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool" />
-  <meta property="og:description" content="Άρθρα με κατηγορία {data.tag}" />
-  <meta property="og:type" content="website" />
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Κατηγορία: {data.tag} {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool" />
-  <meta name="twitter:description" content="Άρθρα με κατηγορία {data.tag}" />
-  
-  <!-- Pagination SEO -->
   {#if data.pagination.hasPreviousPage}
-    <link rel="prev" href="/tags/{data.tagSlug}{data.pagination.currentPage === 2 ? '' : `?page=${data.pagination.currentPage - 1}`}" />
+    <link
+      rel="prev"
+      href={data.pagination.currentPage === 2
+        ? `/tags/${data.tagSlug}`
+        : `/tags/${data.tagSlug}/${data.pagination.currentPage - 1}`}
+    />
   {/if}
   {#if data.pagination.hasNextPage}
-    <link rel="next" href="/tags/{data.tagSlug}?page={data.pagination.currentPage + 1}" />
+    <link rel="next" href={`/tags/${data.tagSlug}/${data.pagination.currentPage + 1}`} />
   {/if}
-  
-  <!-- Canonical URL -->
-  <link rel="canonical" href="/tags/{data.tagSlug}{data.pagination.currentPage === 1 ? '' : `?page=${data.pagination.currentPage}`}" />
 </svelte:head>
 
 <!-- Breadcrumb Navigation -->

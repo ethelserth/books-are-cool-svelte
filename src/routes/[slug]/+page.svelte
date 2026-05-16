@@ -20,6 +20,7 @@
     tags?: string[];
     readingTime?: string;
     authorSlug?: string;
+    metaDescription?: string;
   }
   
   interface PageData {
@@ -58,17 +59,24 @@
   }
 </script>
 
-<Meta 
+<Meta
   title={data.article.title}
-  description={data.article.excerpt}
+  description={data.article.metaDescription || data.article.excerpt}
   url="/{data.article.slug}"
   type="article"
   image={data.article.image}
   author={data.article.author}
   publishedTime={data.article.publishedAt || data.article.date + 'T10:00:00Z'}
+  modifiedTime={data.article.publishedAt || data.article.date + 'T10:00:00Z'}
   tags={data.article.tags}
   rating={data.article.rating}
+  ratingText={data.article.ratingText}
   keywords={data.article.tags?.join(', ')}
+  breadcrumbs={[
+    { name: 'Αρχική', url: '/' },
+    { name: 'Κριτικές', url: '/reviews' },
+    { name: data.article.title, url: `/${data.article.slug}` }
+  ]}
 />
 
 <!-- Breadcrumb Navigation -->

@@ -3,8 +3,9 @@
     import TagPagination from '$lib/components/TagPagination.svelte';
     import { Tag } from 'lucide-svelte';
     import { intersectionObserver } from '$lib/actions/intersectionObserver';
+    import Meta from '$lib/components/Meta.svelte';
     import type { Article } from '$lib/types';
-    
+
     interface PaginationData {
       currentPage: number;
       totalPages: number;
@@ -13,7 +14,7 @@
       hasNextPage: boolean;
       hasPreviousPage: boolean;
     }
-    
+
     interface PageData {
       tag: string;
       tagSlug: string;
@@ -21,35 +22,47 @@
       articleCount: number;
       pagination: PaginationData;
     }
-    
+
     let { data }: { data: PageData } = $props();
+
+    const itemList = $derived(
+      data.articles.map((article) => ({
+        name: article.title,
+        url: `/${article.slug}`,
+        image: article.image
+      }))
+    );
   </script>
-  
+
+  <Meta
+    title={`Κατηγορία: ${data.tag} - Σελίδα ${data.pagination.currentPage}`}
+    description={`Άρθρα με κατηγορία ${data.tag}. Ανακαλύψτε ${data.articleCount} κριτικές βιβλίων και λογοτεχνική ανάλυση - σελίδα ${data.pagination.currentPage} από ${data.pagination.totalPages}.`}
+    url={`/tags/${data.tagSlug}/${data.pagination.currentPage}`}
+    type="collection"
+    keywords={`${data.tag}, κριτικές βιβλίων, λογοτεχνική κριτική, σελίδα ${data.pagination.currentPage}`}
+    twitterCard="summary"
+    breadcrumbs={[
+      { name: 'Αρχική', url: '/' },
+      { name: 'Κατηγορίες', url: '/tags' },
+      { name: data.tag, url: `/tags/${data.tagSlug}` },
+      { name: `Σελίδα ${data.pagination.currentPage}`, url: `/tags/${data.tagSlug}/${data.pagination.currentPage}` }
+    ]}
+    {itemList}
+    itemListName={`Κατηγορία: ${data.tag} - Σελίδα ${data.pagination.currentPage}`}
+  />
+
   <svelte:head>
-    <title>Tag: {data.tag} - Page {data.pagination.currentPage} - Books Are Cool</title>
-    <meta name="description" content="Articles tagged with {data.tag}. Discover {data.articleCount} book reviews and literary analysis - page {data.pagination.currentPage} of {data.pagination.totalPages}." />
-    <meta name="keywords" content="{data.tag}, book reviews, literary criticism, page {data.pagination.currentPage}" />
-    
-    <!-- Open Graph -->
-    <meta property="og:title" content="Tag: {data.tag} - Page {data.pagination.currentPage} - Books Are Cool" />
-    <meta property="og:description" content="Articles tagged with {data.tag}" />
-    <meta property="og:type" content="website" />
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Tag: {data.tag} - Page {data.pagination.currentPage} - Books Are Cool" />
-    <meta name="twitter:description" content="Articles tagged with {data.tag}" />
-    
-    <!-- Pagination SEO -->
     {#if data.pagination.hasPreviousPage}
-      <link rel="prev" href="/tags/{data.tagSlug}{data.pagination.currentPage === 2 ? '' : `/${data.pagination.currentPage - 1}`}" />
+      <link
+        rel="prev"
+        href={data.pagination.currentPage === 2
+          ? `/tags/${data.tagSlug}`
+          : `/tags/${data.tagSlug}/${data.pagination.currentPage - 1}`}
+      />
     {/if}
     {#if data.pagination.hasNextPage}
-      <link rel="next" href="/tags/{data.tagSlug}/{data.pagination.currentPage + 1}" />
+      <link rel="next" href={`/tags/${data.tagSlug}/${data.pagination.currentPage + 1}`} />
     {/if}
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="/tags/{data.tagSlug}{data.pagination.currentPage === 1 ? '' : `/${data.pagination.currentPage}`}" />
   </svelte:head>
   
   <!-- Breadcrumb Navigation -->

@@ -1,35 +1,42 @@
 <script lang="ts">
   import { Tag } from 'lucide-svelte';
-  
+  import Meta from '$lib/components/Meta.svelte';
+
   interface TagData {
     name: string;
     count: number;
     slug: string;
   }
-  
+
   interface PageData {
     tags: TagData[];
     totalTags: number;
   }
-  
+
   let { data }: { data: PageData } = $props();
+
+  const itemList = $derived(
+    data.tags.map((tag) => ({
+      name: tag.name,
+      url: `/tags/${tag.slug}`
+    }))
+  );
 </script>
 
-<svelte:head>
-  <title>Όλες οι Κατηγορίες - Books Are Cool</title>
-  <meta name="description" content="Περιηγηθείτε σε όλες τις {data.totalTags} κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων και τη λογοτεχνική μας κριτική." />
-  <meta name="keywords" content="κατηγορίες, κατηγορίες, κριτικές βιβλίων, λογοτεχνική κριτική, θέματα" />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="Όλες οι Κατηγορίες - Books Are Cool" />
-  <meta property="og:description" content="Περιηγηθείτε σε όλες τις κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων μας" />
-  <meta property="og:type" content="website" />
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Όλες οι Κατηγορίες - Books Are Cool" />
-  <meta name="twitter:description" content="Περιηγηθείτε σε όλες τις κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων μας" />
-</svelte:head>
+<Meta
+  title="Όλες οι Κατηγορίες"
+  description={`Περιηγηθείτε σε όλες τις ${data.totalTags} κατηγορίες που χρησιμοποιούνται στις κριτικές βιβλίων και τη λογοτεχνική μας κριτική.`}
+  url="/tags"
+  type="collection"
+  keywords="κατηγορίες, κριτικές βιβλίων, λογοτεχνική κριτική, θέματα"
+  twitterCard="summary"
+  breadcrumbs={[
+    { name: 'Αρχική', url: '/' },
+    { name: 'Κατηγορίες', url: '/tags' }
+  ]}
+  {itemList}
+  itemListName="Όλες οι Κατηγορίες"
+/>
 
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-7xl mx-auto px-8 pt-8" aria-label="Breadcrumb">

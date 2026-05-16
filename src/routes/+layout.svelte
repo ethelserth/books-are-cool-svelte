@@ -19,10 +19,7 @@
 </script>
   
 <svelte:head>
-	<title>Books Are Cool - Modern Literary Reviews</title>
-
   <link rel="icon" href="/favicon.ico" />
-
 </svelte:head>
   
 <!-- <CustomCursor /> -->

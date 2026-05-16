@@ -2,8 +2,9 @@
   import ArticleCard from '$lib/components/ArticleCard.svelte';
   import { User } from 'lucide-svelte';
   import { intersectionObserver } from '$lib/actions/intersectionObserver';
+  import Meta from '$lib/components/Meta.svelte';
   import type { Article } from '$lib/types';
-  
+
   interface AuthorDetails {
     id: string;
     name: string;
@@ -12,38 +13,42 @@
     image?: string | null;
     articleCount: number;
   }
-  
+
   interface PageData {
     author: string;
     authorDetails: AuthorDetails;
     articles: Article[];
     articleCount: number;
   }
-  
+
   let { data }: { data: PageData } = $props();
+
+  const itemList = $derived(
+    data.articles.map((article) => ({
+      name: article.title,
+      url: `/${article.slug}`,
+      image: article.image
+    }))
+  );
 </script>
 
-<svelte:head>
-  <title>Συγγραφέας: {data.author} - Books Are Cool</title>
-  <meta name="description" content="{data.authorDetails.description}" />
-  <meta name="keywords" content="{data.author}, κριτικές βιβλίων, λογοτεχνική κριτική, συγγραφέας" />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="Συγγραφέας: {data.author} - Books Are Cool" />
-  <meta property="og:description" content="{data.authorDetails.description}" />
-  <meta property="og:type" content="profile" />
-  {#if data.authorDetails.image}
-    <meta property="og:image" content="{data.authorDetails.image}" />
-  {/if}
-  
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Συγγραφέας: {data.author} - Books Are Cool" />
-  <meta name="twitter:description" content="{data.authorDetails.description}" />
-  {#if data.authorDetails.image}
-    <meta name="twitter:image" content="{data.authorDetails.image}" />
-  {/if}
-</svelte:head>
+<Meta
+  title={`Συγγραφέας: ${data.author}`}
+  description={data.authorDetails.description}
+  url={`/authors/${data.authorDetails.slug}`}
+  type="profile"
+  image={data.authorDetails.image || undefined}
+  author={data.author}
+  keywords={`${data.author}, κριτικές βιβλίων, λογοτεχνική κριτική, συγγραφέας`}
+  twitterCard="summary"
+  breadcrumbs={[
+    { name: 'Αρχική', url: '/' },
+    { name: 'Κριτικές', url: '/reviews' },
+    { name: data.author, url: `/authors/${data.authorDetails.slug}` }
+  ]}
+  {itemList}
+  itemListName={`Βιβλία από ${data.author}`}
+/>
 
 <!-- Breadcrumb Navigation -->
 <nav class="max-w-7xl mx-auto px-8 pt-8" aria-label="Breadcrumb">

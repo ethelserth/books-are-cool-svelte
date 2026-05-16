@@ -1,9 +1,10 @@
 <script lang="ts">
   import ArticleCard from '$lib/components/ArticleCard.svelte';
   import Pagination from '$lib/components/Pagination.svelte';
+  import Meta from '$lib/components/Meta.svelte';
   import { intersectionObserver } from '$lib/actions/intersectionObserver';
   import type { Article } from '$lib/types';
-  
+
   interface PageData {
     articles: Article[];
     pagination: {
@@ -15,30 +16,48 @@
       hasPreviousPage: boolean;
     };
   }
-  
+
   let { data }: { data: PageData } = $props();
+
+  const pageSuffix = $derived(
+    data.pagination.currentPage > 1 ? ` - Σελίδα ${data.pagination.currentPage}` : ''
+  );
+  const reviewsUrl = $derived(
+    data.pagination.currentPage === 1 ? '/reviews' : `/reviews/${data.pagination.currentPage}`
+  );
+  const itemList = $derived(
+    data.articles.map((article) => ({
+      name: article.title,
+      url: `/${article.slug}`,
+      image: article.image
+    }))
+  );
 </script>
 
+<Meta
+  title={`Όλες οι Κριτικές${pageSuffix}`}
+  description={`Περιηγηθείτε σε όλες τις κριτικές βιβλίων και τη λογοτεχνική μας κριτική. Σύγχρονη πεζογραφία, κλασικά και αναδυόμενες φωνές - σελίδα ${data.pagination.currentPage} από ${data.pagination.totalPages}.`}
+  url={reviewsUrl}
+  type="collection"
+  keywords={`κριτικές βιβλίων, λογοτεχνική κριτική, σύγχρονη πεζογραφία, προτάσεις βιβλίων, λογοτεχνία${data.pagination.currentPage > 1 ? `, σελίδα ${data.pagination.currentPage}` : ''}`}
+  breadcrumbs={[
+    { name: 'Αρχική', url: '/' },
+    { name: 'Κριτικές', url: '/reviews' }
+  ]}
+  {itemList}
+  itemListName="Όλες οι Κριτικές"
+/>
+
 <svelte:head>
-  <title>Όλες οι Κριτικές {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool</title>
-  <meta name="description" content="Περιηγηθείτε σε όλες τις κριτικές βιβλίων και τη λογοτεχνική μας κριτική. Σύγχρονη πεζογραφία, κλασικά και αναδυόμενες φωνές - σελίδα {data.pagination.currentPage} από {data.pagination.totalPages}." />
-  <meta name="keywords" content="κριτικές βιβλίων, λογοτεχνική κριτική, σύγχρονη πεζογραφία, προτάσεις βιβλίων, λογοτεχνία, σελίδα {data.pagination.currentPage}" />
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="Όλες οι Κριτικές {data.pagination.currentPage > 1 ? `- Σελίδα ${data.pagination.currentPage}` : ''} - Books Are Cool" />
-  <meta property="og:description" content="Περιηγηθείτε σε όλες τις κριτικές βιβλίων και τη λογοτεχνική μας κριτική" />
-  <meta property="og:type" content="website" />
-  
-  <!-- Pagination SEO -->
   {#if data.pagination.hasPreviousPage}
-    <link rel="prev" href="/reviews{data.pagination.currentPage === 2 ? '' : `?page=${data.pagination.currentPage - 1}`}" />
+    <link
+      rel="prev"
+      href={data.pagination.currentPage === 2 ? '/reviews' : `/reviews/${data.pagination.currentPage - 1}`}
+    />
   {/if}
   {#if data.pagination.hasNextPage}
-    <link rel="next" href="/reviews?page={data.pagination.currentPage + 1}" />
+    <link rel="next" href={`/reviews/${data.pagination.currentPage + 1}`} />
   {/if}
-  
-  <!-- Canonical URL -->
-  <link rel="canonical" href="/reviews{data.pagination.currentPage === 1 ? '' : `?page=${data.pagination.currentPage}`}" />
 </svelte:head>
 
 <!-- Page Header -->
