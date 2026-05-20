@@ -74,6 +74,7 @@
   }
 
   const canonicalUrl = absoluteUrl(url);
+  const absoluteImage = absoluteUrl(image);
   const ogType = type === 'profile' ? 'profile' : type === 'article' ? 'article' : 'website';
 
   const organizationNode = {
@@ -274,7 +275,7 @@
   <!-- Open Graph -->
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
-  <meta property="og:image" content={image} />
+  <meta property="og:image" content={absoluteImage} />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content={title} />
@@ -304,7 +305,7 @@
   <meta name="twitter:creator" content={TWITTER_HANDLE} />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={image} />
+  <meta name="twitter:image" content={absoluteImage} />
   <meta name="twitter:image:alt" content={title} />
 
   {@html `<script type="application/ld+json">${jsonLd}</script>`}
