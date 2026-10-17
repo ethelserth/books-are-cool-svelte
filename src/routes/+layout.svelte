@@ -1,34 +1,45 @@
 <script lang="ts">
 	import '../app.css';
-	// import CustomCursor from '$lib/components/CustomCursor.svelte';
-	// import BreakingNews from '$lib/components/BreakingNews.svelte';
+	import type { Snippet } from 'svelte';
 	import Header from '$lib/components/Header.svelte';
-	import FloatingActions from '$lib/components/FloatingActions.svelte';
-  import SearchModal from '$lib/components/SearchModal.svelte';
-
-  let isSearchOpen = $state(false);
-  
-  function openSearch() {
-    isSearchOpen = true;
-  }
-  
-  function closeSearch() {
-    isSearchOpen = false;
-  }
-
+	import Footer from '$lib/components/Footer.svelte';
+	import SearchModal from '$lib/components/SearchModal.svelte';
+	let { children }: { children: Snippet } = $props();
+	let isSearchOpen = $state(false);
+	function openSearch() {
+		isSearchOpen = true;
+	}
+	function handleShortcut(event: KeyboardEvent) {
+		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+			event.preventDefault();
+			isSearchOpen = !isSearchOpen;
+		}
+	}
 </script>
-  
-<svelte:head>
-  <link rel="icon" href="/favicon.ico" />
-</svelte:head>
-  
-<!-- <CustomCursor /> -->
-<!-- <BreakingNews /> -->
+
+<svelte:window onkeydown={handleShortcut} />
+<div id="top"></div>
+<a href="#main-content" class="skip-link">Μετάβαση στο περιεχόμενο</a>
 <Header onOpenSearch={openSearch} />
-  
-<main>
-	<slot />
-</main>
-  
-<FloatingActions onOpenSearch={openSearch} />
-<SearchModal isOpen={isSearchOpen} onClose={closeSearch} />
+<main id="main-content" tabindex="-1">{@render children()}</main>
+<Footer />
+<SearchModal isOpen={isSearchOpen} onClose={() => (isSearchOpen = false)} />
+
+<style>
+	.skip-link {
+		position: fixed;
+		top: 10px;
+		left: 10px;
+		z-index: 100;
+		background: var(--ink);
+		color: var(--paper);
+		padding: 12px 20px;
+		transform: translateY(-160%);
+	}
+	.skip-link:focus {
+		transform: translateY(0);
+	}
+	main:focus {
+		outline: none;
+	}
+</style>

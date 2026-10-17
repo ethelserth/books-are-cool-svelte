@@ -9,6 +9,7 @@ export interface Article {
   ratingText: string;
   date: string;
   publishedAt?: string;
+  modifiedAt?: string;
   slug?: string;
   content?: string;
   tags?: string[];

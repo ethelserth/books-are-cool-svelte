@@ -1,102 +1,138 @@
 <script lang="ts">
-  import StarRating from './StarRating.svelte';
-  import type { Article } from '$lib/types';
-  
-  interface ArticleCardProps {
-    article: Article;
-  }
-  
-  let { article }: ArticleCardProps = $props();
-  
-  function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  }
-  
-  function createTagSlug(tag: string): string {
-    return tag.toLowerCase().replace(/\s+/g, '-');
-  }
+	import { ArrowUpRight } from 'lucide-svelte';
+	import StarRating from './StarRating.svelte';
+	import type { Article } from '$lib/types';
+	let { article }: { article: Article } = $props();
+	function formatDate(value: string) {
+		return new Date(value).toLocaleDateString('el-GR', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric'
+		});
+	}
 </script>
 
-<a href="/{article.slug}" class="article-card group block bg-white border border-border-light transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-accent-red overflow-hidden h-full flex flex-col">
-  <div class="article-header relative overflow-hidden flex-shrink-0">
-    <img 
-      src={article.image} 
-      alt="{article.title} - Book review cover"
-      class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-      loading="lazy"
-      decoding="async"
-    />
-    <div class="article-overlay absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-      <span class="bg-accent-red text-white py-1 px-2 text-xs font-bold uppercase tracking-wide inline-block mb-3">
-        {article.category}
-      </span>
-      <h3 style="font-family: 'Playfair Display', serif" class="text-white text-xl font-bold leading-tight mb-2 line-clamp-2">
-        {article.title}
-      </h3>
-      <p class="text-white/90 text-sm">
-        {article.author}
-      </p>
-    </div>
-  </div>
-  
-  <div class="article-content p-6 flex-1 flex flex-col">
-    <div class="excerpt-container mb-4">
-      <p class="text-text-gray text-sm leading-relaxed">
-        {article.excerpt}
-      </p>
-    </div>
-    
-    <div class="article-footer flex items-center justify-between pt-4 border-t border-border-light mt-auto">
-      <StarRating rating={article.rating} size="small" />
-      <span class="text-text-light text-xs">
-        {formatDate(article.date)}
-      </span>
-    </div>
-  </div>
+<a href="/{article.slug}" class="article-card">
+	<div class="cover">
+		<img src={article.image} alt={article.title} loading="lazy" decoding="async" /><span
+			class="cover-arrow"><ArrowUpRight size={20} strokeWidth={1.5} /></span
+		>
+	</div>
+	<div class="card-meta">
+		<span class="eyebrow">{article.category}</span><span>{formatDate(article.date)}</span>
+	</div>
+	<h3>{article.title}</h3>
+	<p class="author">{article.author}</p>
+	<p class="excerpt">{article.excerpt}</p>
+	<div class="card-bottom">
+		<StarRating rating={article.rating} size="small" /><span
+			>{article.readingTime || 'Διάβασε την κριτική'}</span
+		>
+	</div>
 </a>
 
 <style>
-  .article-card {
-    position: relative;
-  }
-  
-  .article-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transition: left 0.5s;
-    z-index: 1;
-    pointer-events: none;
-  }
-  
-  .article-card:hover::before {
-    left: 100%;
-  }
-
-  /* Fixed height container for excerpt to ensure all cards are same height */
-  .excerpt-container {
-    height: 5rem; /* Fixed height for exactly 4 lines */
-    overflow: hidden;
-  }
-
-  .excerpt-container p {
-    line-height: 1.25; /* Tighter line height for better fit */
-    margin: 0; /* Remove default margin */
-  }
-
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+	.article-card {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-width: 0;
+	}
+	.cover {
+		position: relative;
+		aspect-ratio: 1.48;
+		background: #e9e6db;
+		overflow: hidden;
+	}
+	.cover img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.5s;
+	}
+	.article-card:hover .cover img {
+		transform: scale(1.035);
+	}
+	.cover-arrow {
+		position: absolute;
+		right: 12px;
+		bottom: 12px;
+		height: 34px;
+		width: 34px;
+		display: grid;
+		place-items: center;
+		background: var(--paper);
+		transition:
+			background 0.2s,
+			color 0.2s;
+	}
+	.article-card:hover .cover-arrow {
+		background: var(--red);
+		color: white;
+	}
+	.card-meta {
+		margin: 20px 0 12px;
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		align-items: center;
+	}
+	.eyebrow {
+		color: var(--red);
+		font-size: 8px;
+		letter-spacing: 0.11em;
+	}
+	.card-meta > span:last-child {
+		font-size: 9px;
+		color: var(--color-text-light);
+		white-space: nowrap;
+	}
+	h3 {
+		font-family: var(--font-serif);
+		font-size: 25px;
+		font-weight: 400;
+		line-height: 1.25;
+		letter-spacing: -0.035em;
+	}
+	.article-card:hover h3 {
+		color: var(--red);
+	}
+	.author {
+		font-size: 11px;
+		margin-top: 10px;
+		color: var(--color-text-gray);
+	}
+	.excerpt {
+		font-family: var(--font-serif);
+		font-size: 13px;
+		color: var(--color-text-gray);
+		line-height: 1.9;
+		margin-block: 17px 22px;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	.card-bottom {
+		margin-top: auto;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		border-top: 1px solid var(--line);
+		padding-top: 14px;
+	}
+	.card-bottom > span {
+		font-size: 9px;
+		color: var(--color-text-light);
+	}
+	@media (max-width: 600px) {
+		h3 {
+			font-size: 28px;
+		}
+		.excerpt {
+			font-size: 14px;
+		}
+	}
 </style>

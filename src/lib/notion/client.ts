@@ -2,11 +2,27 @@ import { Client } from '@notionhq/client';
 import { NOTION_API_KEY, NOTION_DATABASE_ID } from '$env/static/private';
 import type { Article } from '$lib/types';
 import { processImage } from './images';
+import { createNotionQueue } from './requests';
 
 // Initialize Notion client
 const notion = new Client({
   auth: NOTION_API_KEY,
 });
+
+const request = createNotionQueue();
+const pageRequests = new Map<string, ReturnType<typeof notion.pages.retrieve>>();
+function retrievePage(id: string) {
+  let pending = pageRequests.get(id);
+  if (!pending) {
+    pending = request(() => notion.pages.retrieve({ page_id: id })).catch(error => {
+      pageRequests.delete(id);
+      throw error;
+    });
+    pageRequests.set(id, pending);
+  }
+  return pending;
+}
+let initialization: Promise<void> | undefined;
 
 // GLOBAL BUILD-TIME CACHE - Single source of truth
 let GLOBAL_BUILD_CACHE: {
@@ -24,6 +40,17 @@ const authorsCache = new Map<string, any>();
 
 // OPTIMIZATION: Initialize all data once at build start with author pre-caching
 export async function initializeBuildCache(): Promise<void> {
+  if (GLOBAL_BUILD_CACHE.initialized) return;
+  if (!initialization) {
+    initialization = populateBuildCache().catch(error => {
+      initialization = undefined;
+      throw error;
+    });
+  }
+  return initialization;
+}
+
+async function populateBuildCache(): Promise<void> {
   if (GLOBAL_BUILD_CACHE.initialized) {
     console.log('Build cache already initialized, skipping...');
     return;
@@ -35,6 +62,14 @@ export async function initializeBuildCache(): Promise<void> {
   try {
     // Fetch ALL data once with parallel processing
     const allArticles = await fetchAllArticlesFromNotion();
+    if (!allArticles.length) throw new Error('Notion returned no published articles; refusing to publish an empty site');
+    const slugs = new Set<string>();
+    for (const article of allArticles) {
+      if (!article.slug || !article.title || slugs.has(article.slug)) {
+        throw new Error(`Published article ${article.id} has a missing title/slug or duplicate slug`);
+      }
+      slugs.add(article.slug);
+    }
     const allTags = extractAllTagsFromArticles(allArticles);
 
     // Pre-cache all author details
@@ -57,7 +92,7 @@ export async function initializeBuildCache(): Promise<void> {
       const chunk = authorIdsArray.slice(i, i + authorConcurrency);
       const chunkPromises = chunk.map(async (authorId) => {
         try {
-          const page = await notion.pages.retrieve({ page_id: authorId });
+          const page = await retrievePage(authorId);
           if (page && 'properties' in page) {
             const properties = page.properties;
             const authorSlug = extractRichText(properties['Slug']);
@@ -85,7 +120,7 @@ export async function initializeBuildCache(): Promise<void> {
             }
           }
         } catch (error) {
-          console.error(`Error pre-caching author ${authorId}:`, error);
+          throw error;
         }
         return null;
       });
@@ -118,7 +153,7 @@ async function fetchAllArticlesFromNotion(): Promise<Article[]> {
   let startCursor: string | undefined = undefined;
 
   while (hasMore) {
-    const response = await notion.databases.query({
+    const response = await request(() => notion.databases.query({
       database_id: NOTION_DATABASE_ID,
       filter: {
         property: 'Publish',
@@ -134,7 +169,7 @@ async function fetchAllArticlesFromNotion(): Promise<Article[]> {
       ],
       start_cursor: startCursor,
       page_size: 100
-    });
+    }));
 
     // Process pages with concurrency limit to prevent ECONNRESET
     const concurrency = 5;
@@ -147,8 +182,7 @@ async function fetchAllArticlesFromNotion(): Promise<Article[]> {
           // We only process the main article metadata here
           return await transformNotionPageToArticle(page, false, true);
         } catch (error) {
-          console.error(`Error processing page ${page.id}:`, error);
-          return null;
+          throw error;
         }
       });
 
@@ -316,7 +350,7 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
     return articleWithContent;
   } catch (error) {
     console.error(`Error fetching content for ${slug}:`, error);
-    return article; // Return without content if fetch fails
+    throw error;
   }
 }
 
@@ -352,7 +386,7 @@ async function getRelationName(relationId: string): Promise<{ name: string; slug
   }
 
   try {
-    const page = await notion.pages.retrieve({ page_id: relationId });
+    const page = await retrievePage(relationId);
 
     let name = 'Unknown';
     let slug: string | undefined;
@@ -382,9 +416,7 @@ async function getRelationName(relationId: string): Promise<{ name: string; slug
     return result;
   } catch (error) {
     console.error(`Error fetching relation ${relationId}:`, error);
-    const fallback = { name: 'Unknown' };
-    relationsCache.set(relationId, fallback);
-    return fallback;
+    throw error;
   }
 }
 
@@ -422,7 +454,8 @@ export async function transformNotionPageToArticle(page: any, includeContent: bo
     rating: rating5,
     ratingText: finalRatingText,
     date: extractDate(properties['Date']),
-    publishedAt: extractDate(properties['Date']) + 'T10:00:00Z',
+    publishedAt: extractDate(properties['Date']),
+    modifiedAt: page.last_edited_time,
     slug: extractRichText(properties['Slug']),
     content: content,
     tags: [],
@@ -518,10 +551,12 @@ export async function getAllAuthors(): Promise<any[]> {
 export async function getPageContent(pageId: string): Promise<string> {
   try {
     const blocks = await getAllBlocksRecursively(pageId);
-    return await convertBlocksToHtml(blocks);
+    const content = await convertBlocksToHtml(blocks);
+    if (!content.trim()) throw new Error(`Published page ${pageId} has no readable content`);
+    return content;
   } catch (error) {
     console.error('Error fetching page content:', error);
-    return '';
+    throw error;
   }
 }
 
@@ -533,18 +568,18 @@ async function getAllBlocksRecursively(blockId: string): Promise<any[]> {
     let startCursor: string | undefined = undefined;
 
     while (hasMore) {
-      const response = await notion.blocks.children.list({
+      const response = await request(() => notion.blocks.children.list({
         block_id: blockId,
         start_cursor: startCursor,
         page_size: 100
-      });
+      }));
 
       for (const block of response.results) {
-        blocks.push(block);
-
-        if (block.has_children) {
+        if ('has_children' in block && block.has_children) {
           const children = await getAllBlocksRecursively(block.id);
-          block.children = children;
+          blocks.push({ ...block, children });
+        } else {
+          blocks.push(block);
         }
       }
 
@@ -552,7 +587,7 @@ async function getAllBlocksRecursively(blockId: string): Promise<any[]> {
       startCursor = response.next_cursor || undefined;
     }
   } catch (error) {
-    console.error(`Error fetching blocks for ${blockId}:`, error);
+    throw error;
   }
 
   return blocks;
@@ -630,11 +665,11 @@ async function convertBlockToHtml(block: any): Promise<string> {
 }
 
 function extractTitle(property: any): string {
-  return property?.title?.[0]?.plain_text || '';
+  return property?.title?.map((part: { plain_text: string }) => part.plain_text).join('') || '';
 }
 
 function extractRichText(property: any): string {
-  return property?.rich_text?.[0]?.plain_text || '';
+  return property?.rich_text?.map((part: { plain_text: string }) => part.plain_text).join('') || '';
 }
 
 function extractNumber(property: any): number | null {

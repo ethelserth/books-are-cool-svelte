@@ -1,291 +1,386 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { Share2, Bookmark, Clock, Tag } from 'lucide-svelte';
-  import StarRating from '$lib/components/StarRating.svelte';
-  import Meta from '$lib/components/Meta.svelte';
-  
-  interface Article {
-    id: string;
-    title: string;
-    author: string;
-    category: string;
-    excerpt: string;
-    image: string;
-    rating: number;
-    ratingText: string;
-    date: string;
-    publishedAt?: string;
-    slug?: string;
-    content?: string;
-    tags?: string[];
-    readingTime?: string;
-    authorSlug?: string;
-    metaDescription?: string;
-  }
-  
-  interface PageData {
-    article: Article;
-    relatedArticles: Article[];
-  }
-  
-  let { data }: { data: PageData } = $props();
-  
-  function formatDateLong(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('el-GR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  }
-  
-  function shareArticle() {
-    if (navigator.share) {
-      navigator.share({
-        title: data.article.title,
-        text: data.article.excerpt,
-        url: window.location.href,
-      });
-    }
-  }
-  
-  function bookmarkArticle() {
-    console.log('Article bookmarked');
-  }
-  
-  function createTagSlug(tag: string): string {
-    return tag.toLowerCase().replace(/\s+/g, '-');
-  }
+	import { afterNavigate } from '$app/navigation';
+	import { Share2, ArrowUpRight, ArrowLeft, Clock } from 'lucide-svelte';
+	import StarRating from '$lib/components/StarRating.svelte';
+	import ArticleCard from '$lib/components/ArticleCard.svelte';
+	import Meta from '$lib/components/Meta.svelte';
+	import type { ArticlePageData } from '$lib/types';
+	let { data }: { data: ArticlePageData } = $props();
+	let shareStatus = $state('');
+	const categoryUrl = $derived(
+		data.article.tags?.some((tag) => tag.toLowerCase() === data.article.category.toLowerCase())
+			? `/tags/${createTagSlug(data.article.category)}`
+			: '/tags'
+	);
+	afterNavigate(() => {
+		shareStatus = '';
+	});
+	function formatDateLong(value: string) {
+		return new Date(value).toLocaleDateString('el-GR', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		});
+	}
+	function createTagSlug(tag: string) {
+		return tag.toLowerCase().replace(/\s+/g, '-');
+	}
+	async function shareArticle() {
+		try {
+			if (navigator.share)
+				await navigator.share({
+					title: data.article.title,
+					text: data.article.excerpt,
+					url: window.location.href
+				});
+			else {
+				await navigator.clipboard.writeText(window.location.href);
+				shareStatus = 'Ο σύνδεσμος αντιγράφηκε.';
+			}
+		} catch (error) {
+			if (!(error instanceof DOMException && error.name === 'AbortError'))
+				shareStatus = 'Αντίγραψε τον σύνδεσμο από τη γραμμή διευθύνσεων.';
+		}
+	}
 </script>
 
 <Meta
-  title={data.article.title}
-  description={data.article.metaDescription || data.article.excerpt}
-  url="/{data.article.slug}"
-  type="article"
-  image={data.article.image}
-  author={data.article.author}
-  publishedTime={data.article.publishedAt || data.article.date + 'T10:00:00Z'}
-  modifiedTime={data.article.publishedAt || data.article.date + 'T10:00:00Z'}
-  tags={data.article.tags}
-  rating={data.article.rating}
-  ratingText={data.article.ratingText}
-  keywords={data.article.tags?.join(', ')}
-  breadcrumbs={[
-    { name: 'Αρχική', url: '/' },
-    { name: 'Κριτικές', url: '/reviews' },
-    { name: data.article.title, url: `/${data.article.slug}` }
-  ]}
+	title={data.article.title}
+	description={data.article.metaDescription || data.article.excerpt}
+	url="/{data.article.slug}"
+	type="article"
+	image={data.article.image}
+	author={data.article.author}
+	publishedTime={data.article.publishedAt || data.article.date + 'T10:00:00Z'}
+	modifiedTime={data.article.modifiedAt}
+	tags={data.article.tags}
+	rating={data.article.rating}
+	ratingText={data.article.ratingText}
+	keywords={data.article.tags?.join(', ')}
+	breadcrumbs={[
+		{ name: 'Αρχική', url: '/' },
+		{ name: 'Κριτικές', url: '/reviews' },
+		{ name: data.article.title, url: `/${data.article.slug}` }
+	]}
 />
 
-<!-- Breadcrumb Navigation -->
-<nav class="max-w-4xl mx-auto px-8 pt-8" aria-label="Breadcrumb">
-  <ol class="flex items-center gap-2 text-sm text-text-light">
-    <li><a href="/" class="hover:text-accent-red">Αρχική</a></li>
-    <li class="before:content-['/'] before:mx-2">
-      <a href="/reviews" class="hover:text-accent-red">Κριτικές</a>
-    </li>
-    <li class="before:content-['/'] before:mx-2 text-text-gray" aria-current="page">
-      {data.article.title}
-    </li>
-  </ol>
-</nav>
-
-<!-- Article Header -->
-<header class="max-w-4xl mx-auto px-8 py-12">
-  <div class="mb-6">
-    <a 
-      href="/tags/{createTagSlug(data.article.category)}"
-      class="inline-block bg-accent-red text-white py-1 px-3 text-sm font-bold uppercase tracking-wide hover:bg-red-700 transition-colors duration-300"
-    >
-      {data.article.category}
-    </a>
-  </div>
-  
-  <h1 style="font-family: 'Playfair Display', serif" class="text-4xl lg:text-5xl font-black leading-tight text-text-black mb-6">
-    {data.article.title}
-  </h1>
-  
-  <div class="flex flex-wrap items-center gap-6 text-text-light text-sm mb-8">
-    <span class="flex items-center gap-2">
-      <Clock size={16} />
-      {data.article.readingTime}
-    </span>
-    <span>{formatDateLong(data.article.date)}</span>
-    <span>
-      Από 
-      {#if data.article.authorSlug}
-        <a 
-          href="/authors/{data.article.authorSlug}" 
-          class="font-semibold text-text-gray hover:text-accent-red transition-colors duration-300"
-        >
-          {data.article.author}
-        </a>
-      {:else}
-        <strong class="text-text-gray">{data.article.author}</strong>
-      {/if}
-    </span>
-  </div>
-  
-  <!-- Article Rating -->
-  <div class="flex items-center justify-between mb-8">
-    <StarRating 
-      rating={data.article.rating} 
-      size="large" 
-      showText={true} 
-      ratingText={data.article.ratingText} 
-    />
-    
-    <!-- Action Buttons -->
-    <div class="flex items-center gap-3">
-      <button
-        onclick={shareArticle}
-        class="flex items-center gap-2 px-4 py-2 border border-border-light hover:border-accent-red hover:text-accent-red transition-colors duration-300"
-        type="button"
-      >
-        <Share2 size={16} />
-        <span class="hidden sm:inline">Κοινοποίηση</span>
-      </button>
-    </div>
-  </div>
-  
-  <!-- Hero Image -->
-  <div class="relative overflow-hidden rounded-lg">
-    <img 
-      src={data.article.image} 
-      alt={data.article.title}
-      class="w-full h-64 lg:h-96 object-cover"
-    />
-  </div>
-</header>
-
-<!-- Article Content -->
-<article class="max-w-4xl mx-auto px-8 pb-16">
-  <div class="prose prose-lg max-w-none text-text-gray leading-relaxed" style="font-family: 'Crimson Pro', serif">
-    <!-- Article Excerpt -->
-    <div class="text-xl leading-relaxed mb-12 text-text-black border-l-4 border-accent-red pl-6">
-      <span class="drop-cap">{data.article.excerpt.charAt(0)}</span>{data.article.excerpt.slice(1)}
-    </div>
-    
-    <!-- Main Content -->
-    <div class="article-content">
-      {@html data.article.content || '<p>Δεν υπάρχει διαθέσιμο περιεχόμενο.</p>'}
-    </div>
-  </div>
-  
-  <!-- Tags -->
-  {#if data.article.tags && data.article.tags.length > 0}
-    <div class="mt-12 pt-8 border-t border-border-light">
-      <div class="flex items-center gap-3 flex-wrap">
-        <Tag size={18} class="text-text-light" />
-        <span class="font-semibold text-text-gray">Κατηγορίες:</span>
-        {#each data.article.tags as tag}
-          <a 
-            href="/tags/{createTagSlug(tag)}"
-            class="bg-light-gray text-text-gray px-3 py-1 text-sm rounded-full hover:bg-accent-red hover:text-white transition-colors duration-300"
-          >
-            {tag}
-          </a>
-        {/each}
-      </div>
-    </div>
-  {/if}
-</article>
-
-<!-- Related Articles Section -->
-{#if data.relatedArticles && data.relatedArticles.length > 0}
-  <section class="max-w-4xl mx-auto px-8 pb-16">
-    <div class="border-t border-border-light pt-12">
-      <div class="flex items-center mb-8">
-        <h2 style="font-family: 'Playfair Display', serif" class="text-3xl font-black text-text-black uppercase tracking-tight">
-          Σχετικά Άρθρα
-        </h2>
-        <div class="flex-1 h-1 gradient-news ml-8"></div>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {#each data.relatedArticles.slice(0, 3) as relatedArticle}
-          <a href="/{relatedArticle.slug}" class="group block bg-white border border-border-light hover:border-accent-red p-4 transition-all duration-300 hover:shadow-md">
-            <div class="mb-4">
-              <img 
-                src={relatedArticle.image} 
-                alt={relatedArticle.title}
-                class="w-full h-32 object-cover rounded transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
-              />
-            </div>
-            <span class="text-xs text-accent-red font-bold uppercase tracking-wide mb-2 block">
-              {relatedArticle.category}
-            </span>
-            <h3 class="font-semibold text-text-black group-hover:text-accent-red transition-colors duration-300 mb-2 line-clamp-2" style="font-family: 'Playfair Display', serif">
-              {relatedArticle.title}
-            </h3>
-            <p class="text-sm text-text-gray mb-3 line-clamp-2">
-              {relatedArticle.excerpt}
-            </p>
-            <div class="flex items-center justify-between text-xs text-text-light">
-              <span>Από {relatedArticle.author}</span>
-              <span>{new Date(relatedArticle.date).toLocaleDateString('el-GR', { month: 'short', day: 'numeric' })}</span>
-            </div>
-          </a>
-        {/each}
-      </div>
-    </div>
-  </section>
-{/if}
-
-<!-- Back to Top -->
-<div class="max-w-4xl mx-auto px-8 pb-8">
-  <a 
-    href="/"
-    class="inline-flex items-center gap-2 text-accent-red font-semibold hover:underline"
-  >
-    ← Επιστροφή στην Αρχική
-  </a>
+<div class="shell">
+	<nav class="breadcrumbs" aria-label="Breadcrumb">
+		<a href="/">Αρχική</a><span>/</span><a href="/reviews">Κριτικές</a><span>/</span><span
+			aria-current="page">{data.article.title}</span
+		>
+	</nav>
+	<header class="article-hero">
+		<div class="article-intro">
+			<a class="eyebrow category" href={categoryUrl}
+				>{data.article.category} <ArrowUpRight size={13} /></a
+			>
+			<h1>{data.article.title}</h1>
+			<p class="book-author">
+				{#if data.article.authorSlug}<a href="/authors/{data.article.authorSlug}"
+						>{data.article.author}</a
+					>{:else}{data.article.author}{/if}
+			</p>
+			<p class="intro-excerpt">{data.article.excerpt}</p>
+			<StarRating
+				rating={data.article.rating}
+				size="large"
+				showText
+				ratingText={data.article.ratingText}
+			/>
+			<div class="article-meta">
+				<time datetime={data.article.date}>{formatDateLong(data.article.date)}</time
+				>{#if data.article.readingTime}<span><Clock size={13} />{data.article.readingTime}</span
+					>{/if}
+			</div>
+		</div>
+		<div class="hero-cover">
+			<img src={data.article.image} alt={data.article.title} fetchpriority="high" />
+		</div>
+	</header>
+	<div class="reading-layout">
+		<aside class="reading-aside">
+			<span class="eyebrow">Στις σελίδες του βιβλίου</span>
+			<p>Μια πιο προσεκτική ματιά.</p>
+			<button class="text-link" onclick={shareArticle}
+				><Share2 size={15} />Κοινοποίηση κριτικής</button
+			><span class="share-status" role="status">{shareStatus}</span><a
+				href="/reviews"
+				class="text-link"><ArrowLeft size={15} />Όλες οι κριτικές</a
+			>
+		</aside>
+		<article class="article-content" aria-label="Κριτική βιβλίου">
+			{@html data.article.content || '<p>Δεν υπάρχει διαθέσιμο περιεχόμενο.</p>'}
+			{#if data.article.tags?.length}<div class="article-tags">
+					{#each data.article.tags as tag}<a href="/tags/{createTagSlug(tag)}"
+							>{tag} <ArrowUpRight size={12} /></a
+						>{/each}
+				</div>{/if}
+		</article>
+	</div>
+	{#if data.relatedArticles?.length}<section class="related">
+			<div class="section-heading">
+				<div>
+					<p class="eyebrow">Η ανάγνωση συνεχίζεται</p>
+					<h2>Ίσως σου αρέσουν επίσης</h2>
+				</div>
+				<a href="/reviews" class="text-link">Όλες οι κριτικές <ArrowUpRight size={17} /></a>
+			</div>
+			<div class="review-grid">
+				{#each data.relatedArticles.slice(0, 3) as article}<ArticleCard {article} />{/each}
+			</div>
+		</section>{/if}
 </div>
 
 <style>
-  :global(.article-content h2) {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--color-text-black);
-    margin-top: 3rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  :global(.article-content h3) {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: var(--color-text-black);
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-  }
-  
-  :global(.article-content p) {
-    margin-bottom: 1.5rem;
-    line-height: 1.7;
-  }
-  
-  :global(.article-content blockquote) {
-    background-color: var(--color-light-gray);
-    border-left: 4px solid var(--color-accent-red);
-    padding: 1.5rem;
-    margin: 2rem 0;
-    font-style: italic;
-    font-size: 1.25rem;
-  }
-  
-  :global(.article-content blockquote p) {
-    margin-bottom: 0;
-  }
-
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+	.breadcrumbs {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+		font-size: 10px;
+		color: var(--color-text-light);
+		padding-top: 30px;
+	}
+	.breadcrumbs a:hover {
+		color: var(--red);
+	}
+	.article-hero {
+		display: grid;
+		grid-template-columns: 1.15fr 1fr;
+		gap: 70px;
+		align-items: center;
+		padding: 45px 0;
+		border-bottom: 1px solid var(--ink);
+	}
+	.category {
+		color: var(--red);
+		display: inline-flex;
+		gap: 12px;
+		align-items: center;
+	}
+	h1 {
+		font-family: var(--font-serif);
+		font-size: clamp(40px, 5vw, 70px);
+		font-weight: 400;
+		line-height: 1.12;
+		letter-spacing: -0.05em;
+		margin: 22px 0;
+	}
+	.book-author {
+		font-size: 16px;
+		margin-bottom: 26px;
+	}
+	.book-author a {
+		text-decoration: underline;
+		text-decoration-color: var(--line);
+	}
+	.book-author a:hover {
+		color: var(--red);
+	}
+	.intro-excerpt {
+		font-family: var(--font-serif);
+		font-size: 17px;
+		line-height: 1.9;
+		color: var(--color-text-gray);
+		margin-bottom: 26px;
+	}
+	.article-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 24px;
+		margin-top: 26px;
+		font-size: 10px;
+		color: var(--color-text-light);
+	}
+	.article-meta span {
+		display: flex;
+		gap: 7px;
+		align-items: center;
+	}
+	.hero-cover {
+		background: #eeece2;
+		min-width: 0;
+	}
+	.hero-cover img {
+		width: 100%;
+		height: 480px;
+		object-fit: contain;
+	}
+	.reading-layout {
+		display: grid;
+		grid-template-columns: 230px minmax(0, 730px);
+		gap: 65px;
+		padding-top: 55px;
+	}
+	.reading-aside {
+		align-self: start;
+		position: sticky;
+		top: 30px;
+	}
+	.reading-aside > .eyebrow {
+		color: var(--red);
+		font-size: 9px;
+	}
+	.reading-aside > p {
+		font-family: var(--font-serif);
+		font-size: 23px;
+		margin: 18px 0 30px;
+	}
+	.reading-aside .text-link {
+		font-size: 11px;
+		display: flex;
+		border-top: 1px solid var(--line);
+		padding-block: 15px;
+		width: 100%;
+	}
+	.share-status {
+		display: block;
+		font-size: 11px;
+		color: var(--red);
+		line-height: 1.7;
+	}
+	.article-content {
+		font-family: var(--font-serif);
+		font-size: 18px;
+		line-height: 1.95;
+		color: #45463e;
+		overflow-wrap: anywhere;
+	}
+	.article-content :global(p) {
+		margin-bottom: 1.6em;
+	}
+	.article-content :global(h1),
+	.article-content :global(h2),
+	.article-content :global(h3) {
+		color: var(--ink);
+		font-family: var(--font-serif);
+		font-weight: 500;
+		letter-spacing: -0.035em;
+		line-height: 1.4;
+		margin: 2em 0 0.8em;
+	}
+	.article-content :global(h2) {
+		font-size: 30px;
+	}
+	.article-content :global(h3) {
+		font-size: 25px;
+	}
+	.article-content :global(a) {
+		color: var(--red);
+		text-decoration: underline;
+	}
+	.article-content :global(blockquote) {
+		border-left: 2px solid var(--red);
+		margin: 35px 0;
+		padding: 10px 0 10px 26px;
+		font-size: 23px;
+		font-style: italic;
+		color: var(--ink);
+	}
+	.article-content :global(blockquote p:last-child) {
+		margin: 0;
+	}
+	.article-content :global(ul),
+	.article-content :global(ol) {
+		padding-left: 24px;
+		margin-bottom: 25px;
+	}
+	.article-content :global(ul) {
+		list-style: disc;
+	}
+	.article-content :global(ol) {
+		list-style: decimal;
+	}
+	.article-content :global(img) {
+		max-height: 650px;
+		object-fit: contain;
+		margin: 25px auto;
+	}
+	.article-content :global(pre) {
+		overflow-x: auto;
+		font-size: 14px;
+	}
+	.article-content :global(table) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
+	}
+	.article-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		border-top: 1px solid var(--line);
+		padding-top: 25px;
+		margin-top: 35px;
+	}
+	.article-tags a {
+		display: inline-flex;
+		align-items: center;
+		gap: 9px;
+		border: 1px solid var(--line);
+		padding: 7px 13px;
+		font-family: var(--font-sans);
+		font-size: 10px;
+		text-decoration: none;
+		color: var(--ink);
+	}
+	.article-tags a:hover {
+		border-color: var(--red);
+		color: var(--red);
+	}
+	.related {
+		margin-top: 75px;
+	}
+	@media (max-width: 1000px) {
+		.article-hero {
+			gap: 35px;
+		}
+		.reading-layout {
+			grid-template-columns: 170px minmax(0, 1fr);
+			gap: 35px;
+		}
+		.hero-cover img {
+			height: 400px;
+		}
+	}
+	@media (max-width: 700px) {
+		.article-hero {
+			grid-template-columns: 1fr;
+			padding-top: 30px;
+			gap: 30px;
+		}
+		.hero-cover img {
+			height: 350px;
+		}
+		.reading-layout {
+			display: flex;
+			flex-direction: column;
+			gap: 30px;
+			padding-top: 30px;
+		}
+		.reading-aside {
+			position: static;
+			width: 100%;
+		}
+		.reading-aside > .eyebrow,
+		.reading-aside > p,
+		.reading-aside > a {
+			display: none;
+		}
+		.reading-aside .text-link {
+			border-top: 0;
+			padding-block: 0;
+		}
+		.article-content {
+			font-size: 17px;
+		}
+		.intro-excerpt {
+			font-size: 16px;
+		}
+		.related {
+			margin-top: 50px;
+		}
+	}
 </style>
